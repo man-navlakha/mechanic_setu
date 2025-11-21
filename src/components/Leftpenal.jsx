@@ -25,6 +25,10 @@ export default function LeftPanel({ activeJob }) {
             try {
                 const userResponse = await api.get('/Profile/UserProfile/');
                 setUser(userResponse.data);
+console.log(userResponse.data.mobile_number === null)
+                if(userResponse.data.mobile_number === null){
+                    navigate('/form')
+                }
             } catch (error) {
                 console.error("Failed to fetch user data", error);
             }
