@@ -119,6 +119,7 @@ export default function MechanicFound() {
   const [jobDetails] = useState(initialState.jobDetails);
   const [jobRequestDetails, setJobRequestDetails] = useState(null);
   const [estimatedTime, setEstimatedTime] = useState(null);
+  const [mechanicArrived, setMechanicArrived] = useState(false);
   const [mechanicLocation, setMechanicLocation] = useState(() =>
     initialState.mechanic?.current_latitude
       ? { lat: initialState.mechanic.current_latitude, lng: initialState.mechanic.current_longitude }
@@ -172,13 +173,15 @@ export default function MechanicFound() {
   useEffect(() => {
     if (!lastMessage) return;
 
+    const msgId = lastMessage.request_id || lastMessage.job_id;
+
     if (lastMessage.type === 'mechanic_location_update' &&
-        lastMessage.request_id?.toString() === paramRequestId) {
+      msgId?.toString() === paramRequestId) {
       setMechanicLocation({ lat: lastMessage.latitude, lng: lastMessage.longitude });
       return;
     }
 
-    if (lastMessage.request_id?.toString() !== paramRequestId) return;
+    if (msgId?.toString() !== paramRequestId) return;
 
     switch (lastMessage.type) {
       case 'job_completed':
@@ -193,6 +196,10 @@ export default function MechanicFound() {
         clearActiveJobData();
         navigate('/');
         break;
+      case 'mechanic_arrived':
+        toast.success("Mechanic has arrived!");
+        setMechanicArrived(true);
+        break;
       default:
         break;
     }
@@ -206,8 +213,27 @@ export default function MechanicFound() {
     }
   }, [userLocation, mechanicLocation]);
 
+  const [mapAds, setMapAds] = useState([]);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const adMarkersRef = useRef([]);
+
+  // Fetch Map Ads
+  useEffect(() => {
+    const fetchAds = async () => {
+      try {
+        const response = await api.get('/core/map-ads/');
+        setMapAds(response.data);
+      } catch (error) {
+        console.error("Failed to load map ads", error);
+      }
+    };
+    fetchAds();
+  }, []);
+
   // --- Map Setup ---
   useEffect(() => {
+    if (mechanicArrived) return; // Don't initialize map if mechanic arrived
+
     if (!mapContainerRef.current || !mechanic || !userLocation || !mechanicLocation) return;
 
     if (!mapInstanceRef.current) {
@@ -215,11 +241,13 @@ export default function MechanicFound() {
         container: mapContainerRef.current,
         center: [(userLocation.lng + mechanicLocation.lng) / 2, (userLocation.lat + mechanicLocation.lat) / 2],
         zoom: 13,
-        style: `https://api.maptiler.com/maps/streets/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
+        style: `https://api.maptiler.com/maps/019b64a4-ef96-7e83-9a23-dde0df92b2ba/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
+        attributionControl: false,
       });
       mapInstanceRef.current = map;
 
       map.on('load', () => {
+        setIsMapLoaded(true);
         const userEl = document.createElement('img');
         userEl.src = '/ms.png';
         userEl.style.width = '35px';
@@ -252,7 +280,60 @@ export default function MechanicFound() {
     if (userLocation && userMarkerRef.current) {
       userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
     }
-  }, [mechanic, mechanicLocation, userLocation]);
+  }, [mechanic, mechanicLocation, userLocation, mechanicArrived]);
+
+  // Handle Ads on Map
+  useEffect(() => {
+    if (!isMapLoaded || !mapInstanceRef.current || mapAds.length === 0 || mechanicArrived) return;
+
+    // Clear existing ad markers
+    adMarkersRef.current.forEach(marker => marker.remove());
+    adMarkersRef.current = [];
+
+    mapAds.forEach(ad => {
+      // Container mimic: bg-white p-0.5 rounded-full border-2 border-amber-400 shadow-lg
+      const el = document.createElement('div');
+      el.className = 'ad-marker-container';
+      el.style.width = '36px';
+      el.style.height = '36px';
+      el.style.backgroundColor = 'white';
+      el.style.padding = '2px'; // p-0.5 equivalent
+      el.style.borderRadius = '50%';
+      el.style.border = '2px solid #fbbf24'; // amber-400
+      el.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'; // shadow-lg
+      el.style.cursor = 'pointer';
+      el.style.overflow = 'hidden';
+
+      // Image mimic: w-full h-full rounded-full object-cover
+      const img = document.createElement('div');
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.borderRadius = '50%';
+      img.style.backgroundImage = `url(${ad.logo})`;
+      img.style.backgroundSize = 'cover';
+      img.style.backgroundPosition = 'center';
+
+      el.appendChild(img);
+
+      const popupHTML = `
+        <div class="p-2 text-center">
+          <h3 class="font-bold text-sm">${ad.businessName}</h3>
+          <p class="text-xs text-gray-600">${ad.description || ''}</p>
+          ${ad.offerTitle ? `<div class="mt-1 text-xs font-bold text-red-500">${ad.offerTitle}</div>` : ''}
+          ${ad.link ? `<a href="${ad.link}" target="_blank" class="text-blue-500 text-xs underline mt-1 block">Visit Website</a>` : ''}
+        </div>
+      `;
+
+      const popup = new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(popupHTML);
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([ad.longitude, ad.latitude])
+        .setPopup(popup)
+        .addTo(mapInstanceRef.current);
+
+      adMarkersRef.current.push(marker);
+    });
+  }, [mapAds, isMapLoaded, mechanicArrived]);
 
   const fitMapToMarkers = () => {
     const map = mapInstanceRef.current;
@@ -310,12 +391,23 @@ export default function MechanicFound() {
           <div className={`${baseBg} rounded-b-3xl p-5 ${neumorphicShadow} flex items-center justify-between`}>
             <div>
               <h1 className="text-xl font-bold text-slate-800">
-                {estimatedTime ? `Arriving in ~${estimatedTime} mins` : 'Calculating ETA...'}
+                {mechanicArrived
+                  ? "Mechanic is Here!"
+                  : estimatedTime
+                    ? `Arriving in ~${estimatedTime} mins`
+                    : 'Calculating ETA...'}
               </h1>
-              <p className={`${secondaryTextColor} text-sm`}>Your mechanic is on the way</p>
+              <p className={`${secondaryTextColor} text-sm`}>
+                {mechanicArrived
+                  ? "Please meet your mechanic"
+                  : "Your mechanic is on the way"}
+              </p>
             </div>
             <div className={`p-3 rounded-full ${neumorphicInsetShadow}`}>
-              <Clock size={24} className="text-green-600" />
+              {mechanicArrived
+                ? <MapPin size={24} className="text-red-500 animate-bounce" />
+                : <Clock size={24} className="text-green-600" />
+              }
             </div>
           </div>
         </div>
@@ -341,10 +433,20 @@ export default function MechanicFound() {
             </button>
           </div>
 
-          {/* Map */}
-          <div className={`rounded-3xl p-2 ${neumorphicInsetShadow}`}>
-            <div ref={mapContainerRef} className="w-full h-80 rounded-2xl" />
-          </div>
+          {/* Map or Arrival UI */}
+          {!mechanicArrived ? (
+            <div className={`rounded-3xl p-2 ${neumorphicInsetShadow}`}>
+              <div ref={mapContainerRef} className="w-full h-80 rounded-2xl" />
+            </div>
+          ) : (
+            <div className={`rounded-3xl p-6 ${neumorphicShadow} bg-green-50 flex flex-col items-center justify-center text-center`}>
+              <div className="p-4 bg-green-100 rounded-full mb-4 animate-pulse">
+                <Wrench size={48} className="text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold text-green-800 mb-2">Mechanic Has Arrived</h2>
+              <p className="text-green-600">Please proceed to meet the mechanic at your location.</p>
+            </div>
+          )}
 
           {/* Job Details */}
           {jobRequestDetails && (
@@ -381,11 +483,10 @@ export default function MechanicFound() {
                 <div
                   key={reason}
                   onClick={() => setSelectedReason(reason)}
-                  className={`w-full px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 font-medium ${
-                    selectedReason === reason
-                      ? `text-red-600 ${neumorphicInsetShadow}`
-                      : `${neumorphicShadow} hover:text-blue-600`
-                  }`}
+                  className={`w-full px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 font-medium ${selectedReason === reason
+                    ? `text-red-600 ${neumorphicInsetShadow}`
+                    : `${neumorphicShadow} hover:text-blue-600`
+                    }`}
                 >
                   {reason}
                 </div>
