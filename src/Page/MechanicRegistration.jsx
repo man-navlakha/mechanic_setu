@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 import {
     User, Phone, Mail, Store, MapPin, Map, FileText,
     CheckCircle, Camera, CreditCard, ChevronRight, ChevronLeft,
-    Upload, AlertCircle, Check, Loader, Trash2, Wrench, Car, Bike, Truck, X, Zap, Bus, Fuel
+    Upload, AlertCircle, Check, Loader, Trash2, Wrench, Car, Bike, Truck, X, Zap, Bus, Fuel, Clock
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const CLOUDINARY_CLOUD_NAME = 'dxv7sjeto';
 const CLOUDINARY_API_KEY = '628314756489181';
@@ -269,7 +281,7 @@ const VehicleMultiSelect = ({ label, value, onChange }) => {
 
 // --- NEW COMPONENT: FuelSelector ---
 const FuelSelector = ({ value, onChange }) => {
-    const options = ['Petrol', 'Diesel'];
+    const options = ['Petrol', 'Diesel', 'EV Charging'];
     const currentValues = value ? value.split(',').map(s => s.trim().toLowerCase()) : [];
 
     const toggle = (option) => {
@@ -374,12 +386,113 @@ const SkillsInput = ({ value, onChange }) => {
     );
 };
 
+// --- NEW COMPONENT: LocationPicker ---
+const LocationPicker = ({ label, lat, lng, onChange }) => {
+    const [position, setPosition] = useState(null);
+
+    // Initialize position from props if available
+    useEffect(() => {
+        if (lat && lng) {
+            setPosition([lat, lng]);
+        }
+    }, [lat, lng]);
+
+    const MapEvents = () => {
+        useMapEvents({
+            click(e) {
+                const { lat, lng } = e.latlng;
+                setPosition([lat, lng]);
+                onChange(lat, lng);
+            },
+        });
+        return null;
+    };
+
+    const handleGetCurrentLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    setPosition([latitude, longitude]);
+                    onChange(latitude, longitude);
+                },
+                (err) => {
+                    console.error(err);
+                    toast.error('Unable to retrieve your location');
+                }
+            );
+        } else {
+            toast.error('Geolocation is not supported by your browser');
+        }
+    };
+
+    return (
+        <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">{label}</label>
+                <button
+                    type="button"
+                    onClick={handleGetCurrentLocation}
+                    className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                >
+                    <MapPin size={14} /> Use My Current Location
+                </button>
+            </div>
+
+            <div className="h-64 rounded-xl overflow-hidden border border-gray-200 z-0 relative">
+                <MapContainer
+                    center={position || [20.5937, 78.9629]} // Default to India center if no position
+                    zoom={position ? 15 : 5}
+                    scrollWheelZoom={false}
+                    className="h-full w-full"
+                    key={position ? `${position[0]}-${position[1]}` : 'default'} // Force re-render on position change to re-center
+                >
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    {position && <Marker position={position} />}
+                    <MapEvents />
+                </MapContainer>
+            </div>
+
+            {/* Manual Lat/Lng Inputs */}
+            <div className="grid grid-cols-2 gap-4 mt-3">
+                <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="text-xs text-gray-500 block mb-1">Latitude</span>
+                    <input
+                        type="number"
+                        value={lat || ''}
+                        onChange={(e) => onChange(e.target.value, lng)}
+                        placeholder="0.000000"
+                        className="w-full bg-transparent font-medium text-gray-900 border-none p-0 focus:ring-0 text-sm outline-none"
+                        step="any"
+                    />
+                </div>
+                <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="text-xs text-gray-500 block mb-1">Longitude</span>
+                    <input
+                        type="number"
+                        value={lng || ''}
+                        onChange={(e) => onChange(lat, e.target.value)}
+                        placeholder="0.000000"
+                        className="w-full bg-transparent font-medium text-gray-900 border-none p-0 focus:ring-0 text-sm outline-none"
+                        step="any"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Component ---
 
 const MechanicRegistration = () => {
     const navigate = useNavigate();
+    const { id } = useParams(); // Get ID for edit mode
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -400,8 +513,11 @@ const MechanicRegistration = () => {
         electric: false,
         electric_vehicle_types: '',
         fuel_delivery_types: '',
+        services_offered: '',
+        working_hours: '',
 
         // Documents & Status
+        user_id: '',
         profile_photo: '',
         shop_photo: '',
         KYC_document: '',
@@ -412,6 +528,41 @@ const MechanicRegistration = () => {
         current_latitude: '',
         current_longitude: '',
     });
+
+    // Check for Edit Mode
+    useEffect(() => {
+        if (id) {
+            setIsEditMode(true);
+            const fetchMechanic = async () => {
+                try {
+                    const response = await fetch(`https://mechanic-setu-backend.vercel.app/api/ms-mechanics/${id}`);
+                    const data = await response.json();
+                    if (data.success && data.mechanic) {
+                        // Merge fetched data with default state to ensure all fields exist
+                        setFormData(prev => ({
+                            ...prev,
+                            ...data.mechanic,
+                            // Ensure boolean conversions or specific field handling if API returns different types
+                            shop_latitude: data.mechanic.shop_latitude || '',
+                            shop_longitude: data.mechanic.shop_longitude || '',
+                            current_latitude: data.mechanic.current_latitude || '',
+                            current_longitude: data.mechanic.current_longitude || '',
+                            electric: Boolean(data.mechanic.electric),
+                            yes_for_startup: Boolean(data.mechanic.yes_for_startup),
+                            is_verified: Boolean(data.mechanic.is_verified)
+                        }));
+                    } else {
+                        toast.error('Mechanic not found');
+                        navigate('/ms/list');
+                    }
+                } catch (error) {
+                    console.error('Error fetching mechanic for edit:', error);
+                    toast.error('Could not load mechanic details');
+                }
+            };
+            fetchMechanic();
+        }
+    }, [id, navigate]);
 
     const totalSteps = 3;
 
@@ -443,8 +594,17 @@ const MechanicRegistration = () => {
             if (payload.current_latitude) payload.current_latitude = parseFloat(payload.current_latitude);
             if (payload.current_longitude) payload.current_longitude = parseFloat(payload.current_longitude);
 
-            const response = await fetch('http://localhost:3000/api/ms-mechanics', {
-                method: 'POST',
+            if (payload.current_latitude) payload.current_latitude = parseFloat(payload.current_latitude);
+            if (payload.current_longitude) payload.current_longitude = parseFloat(payload.current_longitude);
+
+            const url = isEditMode
+                ? `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/${id}`
+                : 'https://mechanic-setu-backend.vercel.app/api/ms-mechanics';
+
+            const method = isEditMode ? 'PATCH' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -454,17 +614,22 @@ const MechanicRegistration = () => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success('Mechanic registered successfully!');
-                setFormData({
-                    full_name: '', phone: '', email: '', notes: '',
-                    shop_name: '', shop_address: '', shop_latitude: '', shop_longitude: '', shop_google_map_link: '',
-                    special_skills: '', vehicle_type: '',
-                    electric: false, electric_vehicle_types: '', fuel_delivery_types: '',
-                    profile_photo: '', shop_photo: '', KYC_document: '', adhar_card: '',
-                    is_verified: false, status: 'OFFLINE', yes_for_startup: false,
-                    current_latitude: '', current_longitude: ''
-                });
-                setStep(1);
+                toast.success(isEditMode ? 'Mechanic updated successfully!' : 'Mechanic registered successfully!');
+                if (!isEditMode) {
+                    setFormData({
+                        full_name: '', phone: '', email: '', notes: '',
+                        shop_name: '', shop_address: '', shop_latitude: '', shop_longitude: '', shop_google_map_link: '',
+                        special_skills: '', vehicle_type: '',
+                        electric: false, electric_vehicle_types: '', fuel_delivery_types: '', services_offered: '', working_hours: '',
+                        profile_photo: '', shop_photo: '', KYC_document: '', adhar_card: '',
+                        is_verified: false, status: 'OFFLINE', yes_for_startup: false, user_id: '',
+                        current_latitude: '', current_longitude: ''
+                    });
+                    setStep(1);
+                } else {
+                    // Navigate back to detail view on update
+                    navigate(`/ms/view/${id}`);
+                }
             } else {
                 toast.error(data.message || 'Registration failed');
             }
@@ -480,8 +645,8 @@ const MechanicRegistration = () => {
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mx-auto">
                 <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Mechanic Registration</h1>
-                    <p className="text-gray-500 mt-2">Register a new mechanic partner with MS</p>
+                    <h1 className="text-3xl font-bold text-gray-900">{isEditMode ? 'Update Mechanic Profile' : 'Mechanic Registration'}</h1>
+                    <p className="text-gray-500 mt-2">{isEditMode ? 'Edit partner details' : 'Register a new mechanic partner with MS'}</p>
                 </div>
 
                 {/* Progress Bar */}
@@ -621,42 +786,43 @@ const MechanicRegistration = () => {
                                         onChange={(val) => setFormData(prev => ({ ...prev, fuel_delivery_types: val }))}
                                     />
 
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <InputField
-                                            label="Latitude" name="shop_latitude" icon={Map} placeholder="23.00" type="number"
-                                            value={formData.shop_latitude} onChange={handleInputChange}
-                                        />
-                                        <InputField
-                                            label="Longitude" name="shop_longitude" icon={Map} placeholder="72.50" type="number"
-                                            value={formData.shop_longitude} onChange={handleInputChange}
-                                        />
-                                    </div>
+                                    <LocationPicker
+                                        label="Shop Location"
+                                        lat={formData.shop_latitude}
+                                        lng={formData.shop_longitude}
+                                        onChange={(lat, lng) => setFormData(prev => ({ ...prev, shop_latitude: lat, shop_longitude: lng }))}
+                                    />
 
                                     <InputField
                                         label="Google Map Link" name="shop_google_map_link" icon={MapPin} placeholder="https://maps.google.com/..."
                                         value={formData.shop_google_map_link} onChange={handleInputChange}
                                     />
 
+                                    <InputField
+                                        label="Working Hours" name="working_hours" icon={Clock} placeholder="e.g. Mon-Sat, 9AM - 8PM"
+                                        value={formData.working_hours} onChange={handleInputChange}
+                                    />
+
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Services Offered</label>
+                                        <textarea
+                                            name="services_offered"
+                                            value={formData.services_offered}
+                                            onChange={handleInputChange}
+                                            rows={3}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                            placeholder="Describe the services you offer..."
+                                        />
+                                    </div>
+
                                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                                         <p className="text-xs text-blue-700 font-medium mb-2">Live Tracking Coordinates (Optional)</p>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <input
-                                                type="number"
-                                                name="current_latitude"
-                                                value={formData.current_latitude}
-                                                onChange={handleInputChange}
-                                                placeholder="Curr Lat"
-                                                className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm"
-                                            />
-                                            <input
-                                                type="number"
-                                                name="current_longitude"
-                                                value={formData.current_longitude}
-                                                onChange={handleInputChange}
-                                                placeholder="Curr Lng"
-                                                className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm"
-                                            />
-                                        </div>
+                                        <LocationPicker
+                                            label="Current Live Location"
+                                            lat={formData.current_latitude}
+                                            lng={formData.current_longitude}
+                                            onChange={(lat, lng) => setFormData(prev => ({ ...prev, current_latitude: lat, current_longitude: lng }))}
+                                        />
                                     </div>
                                 </motion.div>
                             )}
@@ -751,7 +917,7 @@ const MechanicRegistration = () => {
                                 {loading ? (
                                     <>Processing...</>
                                 ) : step === totalSteps ? (
-                                    <>Complete Registration <Check size={18} /></>
+                                    <>{isEditMode ? 'Update Profile' : 'Complete Registration'} <Check size={18} /></>
                                 ) : (
                                     <>Next Step <ChevronRight size={18} /></>
                                 )}

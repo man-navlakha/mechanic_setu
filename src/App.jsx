@@ -18,6 +18,8 @@ import RequestLayout from './Page/RequestLayout';
 import FindingMechanic from './Page/FindingMechanic';
 import NearbyMechanics from './Page/NearbyMechanics';
 import MechanicRegistration from './Page/MechanicRegistration';
+import MechanicList from './Page/MechanicList';
+import MechanicDetail from './Page/MechanicDetail';
 import Protected from './ProtectedRoute';
 import { WebSocketProvider, useWebSocket } from './context/WebSocketContext';
 
@@ -76,6 +78,13 @@ export default function App() {
         <Route path="/verify" element={<OTP />} />
         <Route path="/logout" element={<Logout />} />
 
+        {/* Temporary Public Routes for Testing */}
+        <Route path="/nearby-mechanics" element={<NearbyMechanics />} />
+        <Route path="/ms" element={<MechanicRegistration />} />
+        <Route path="/ms/list" element={<MechanicList />} />
+        <Route path="/ms/view/:id" element={<MechanicDetail />} />
+        <Route path="/ms/edit/:id" element={<MechanicRegistration />} />
+
         {/* All protected routes are nested here */}
         <Route
           path="/*"
@@ -88,8 +97,7 @@ export default function App() {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/form" element={<ProcessForm />} />
                   <Route path="/request" element={<PunctureRequestForm />} />
-                  <Route path="/nearby-mechanics" element={<NearbyMechanics />} />
-                  <Route path="/ms" element={<MechanicRegistration />} />
+                  <Route path="/request" element={<PunctureRequestForm />} />
 
                   <Route element={<RequestLayout />}>
                     <Route path="/finding/:request_id" element={<FindingMechanic />} />
