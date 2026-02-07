@@ -60,6 +60,8 @@ export default function FindingMechanic() {
   }, [socket, connectionStatus, request_id]);
 
   useEffect(() => {
+    console.log("msg", lastMessage);
+
     // src/Page/FindingMechanic.jsx:54
     if (!lastMessage || lastMessage.job_id?.toString() !== request_id) {
       // Ignore messages not for this request
@@ -81,7 +83,7 @@ export default function FindingMechanic() {
 
           localStorage.setItem('mechanicAcceptedData', JSON.stringify(mechanicData));
 
-           toast.success(`Mechanic assigned! Arriving in ${lastMessage.estimated_arrival_time || 'a few minutes'} 🚗`);
+          toast.success(`Mechanic assigned! Arriving in ${lastMessage.estimated_arrival_time || 'a few minutes'} 🚗`);
         } catch (error) {
           console.error('❌ Error saving mechanic data to localStorage:', error);
         }
@@ -100,11 +102,11 @@ export default function FindingMechanic() {
 
       // ✨ ADD THIS CASE ✨
       case 'no_mechanic_found':
-        toast.error(lastMessage.message || 'We could not find an available mechanic.');
+        toast.error(lastMessage.message || 'We could not find an available mechanic. Showing nearby alternatives.');
         // Optionally clear any local state related to the search if needed
         localStorage.removeItem('activeJobData');
-        localStorage.removeItem('punctureRequestFormData');
-        navigate('/'); // Navigate back home or to a relevant page
+        // Keep punctureRequestFormData so nearby mechanics page can use the location
+        navigate('/nearby-mechanics'); // Navigate to nearby mechanics page
         break;
       // END OF ADDITION
 
