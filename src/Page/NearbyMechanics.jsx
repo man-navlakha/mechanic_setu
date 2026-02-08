@@ -120,6 +120,23 @@ export default function NearbyMechanics() {
         if (userLocation) fetchNearbyMechanics();
     }, [userLocation, searchRadius]);
 
+    // Fly to selected mechanic
+    useEffect(() => {
+        if (selectedMechanic && mapInstanceRef.current) {
+            const lat = selectedMechanic.shop_latitude || selectedMechanic.current_latitude || selectedMechanic.location?.shop?.latitude;
+            const lng = selectedMechanic.shop_longitude || selectedMechanic.current_longitude || selectedMechanic.location?.shop?.longitude;
+
+            if (lat && lng) {
+                mapInstanceRef.current.flyTo({
+                    center: [lng, lat],
+                    zoom: 15,
+                    duration: 2000,
+                    essential: true
+                });
+            }
+        }
+    }, [selectedMechanic]);
+
     // Helper function to create circle coordinates for radius visualization
     const createCircleCoordinates = (centerLng, centerLat, radiusKm, points = 64) => {
         const coords = [];
@@ -247,8 +264,12 @@ export default function NearbyMechanics() {
 
         // Add markers for ALL mechanics (both online and offline, inside and outside radius)
         mechanics.forEach((mech) => {
-            const mechLocation = mech.location?.shop;
-            if (!mechLocation || !mechLocation.latitude || !mechLocation.longitude) return;
+            const lat = mech.shop_latitude || mech.current_latitude || mech.location?.shop?.latitude;
+            const lng = mech.shop_longitude || mech.current_longitude || mech.location?.shop?.longitude;
+
+            if (!lat || !lng) return;
+
+            const mechLocation = { latitude: lat, longitude: lng };
 
             const isOnline = mech.status === 'ONLINE';
             const isVerified = mech.is_verified;
@@ -401,9 +422,11 @@ export default function NearbyMechanics() {
             const bounds = new maplibregl.LngLatBounds();
             bounds.extend([userLocation.lng, userLocation.lat]);
             mechanics.forEach(mech => {
-                const loc = mech.location?.shop;
-                if (loc && loc.latitude && loc.longitude) {
-                    bounds.extend([loc.longitude, loc.latitude]);
+                const lat = mech.shop_latitude || mech.current_latitude || mech.location?.shop?.latitude;
+                const lng = mech.shop_longitude || mech.current_longitude || mech.location?.shop?.longitude;
+
+                if (lat && lng) {
+                    bounds.extend([lng, lat]);
                 }
             });
             map.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 1000 });
@@ -534,8 +557,8 @@ export default function NearbyMechanics() {
             ring-2 ring-offset-2 ${isOnline ? 'ring-green-400' : 'ring-gray-200'}
             transition-all duration-300 group-hover:ring-offset-4`}>
                             <img
-                                src={mechanic.profile_photo || '/ms.png'}
-                                alt={mechanic.full_name || 'Mechanic'}
+                                src={mechanic.profile_photo || mechanic.mechanic?.profile_photo || mechanic.user?.profile_photo || '/ms.png'}
+                                alt={mechanic.full_name || mechanic.mechanic?.full_name || mechanic.user?.full_name || mechanic.shop_name || 'Mechanic'}
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -552,7 +575,7 @@ export default function NearbyMechanics() {
                     <div className="flex-grow min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                             <h3 className="text-base lg:text-lg font-bold text-gray-900 truncate">
-                                {mechanic.full_name || 'Unknown'}
+                                {mechanic.full_name || mechanic.mechanic?.full_name || mechanic.user?.full_name || mechanic.shop_name || 'Mechanic Setu Partner'}
                             </h3>
                         </div>
 
@@ -599,7 +622,8 @@ export default function NearbyMechanics() {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleCallMechanic(mechanic.phone);
+                                const phoneNum = mechanic.phone || mechanic.mechanic?.phone || mechanic.user?.phone || mechanic.mobile || mechanic.mechanic?.mobile || mechanic.contact_number;
+                                handleCallMechanic(phoneNum);
                             }}
                             className={`w-11 h-11 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl 
                        flex items-center justify-center transition-all duration-300
@@ -616,8 +640,9 @@ export default function NearbyMechanics() {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const shop = mechanic.location?.shop;
-                                handleGetDirections(shop?.latitude, shop?.longitude);
+                                const lat = mechanic.shop_latitude || mechanic.current_latitude || mechanic.location?.shop?.latitude;
+                                const lng = mechanic.shop_longitude || mechanic.current_longitude || mechanic.location?.shop?.longitude;
+                                handleGetDirections(lat, lng);
                             }}
                             className="w-11 h-11 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl 
                        flex items-center justify-center transition-all duration-300
@@ -697,8 +722,8 @@ export default function NearbyMechanics() {
                                 <div className={`w-24 h-24 lg:w-28 lg:h-28 rounded-2xl overflow-hidden
             ring-4 ring-white shadow-xl ${isOnline ? 'ring-green-100' : 'ring-gray-100'}`}>
                                     <img
-                                        src={mechanic.profile_photo || '/ms.png'}
-                                        alt={mechanic.full_name}
+                                        src={mechanic.profile_photo || mechanic.mechanic?.profile_photo || mechanic.user?.profile_photo || '/ms.png'}
+                                        alt={mechanic.full_name || mechanic.mechanic?.full_name || mechanic.user?.full_name || mechanic.shop_name}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
@@ -716,7 +741,7 @@ export default function NearbyMechanics() {
                             {/* Name & Shop */}
                             <div className="text-center mb-6">
                                 <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">
-                                    {mechanic.full_name}
+                                    {mechanic.full_name || mechanic.mechanic?.full_name || mechanic.user?.full_name || mechanic.shop_name || 'Mechanic Setu Partner'}
                                 </h2>
                                 <p className="text-gray-500 flex items-center justify-center gap-1.5">
                                     <Store size={14} />
@@ -771,7 +796,9 @@ export default function NearbyMechanics() {
                                         </div>
                                         <div className="flex-1">
                                             <p className="text-xs text-gray-400 uppercase tracking-wide">Phone</p>
-                                            <p className="text-sm text-gray-700 font-medium">{mechanic.phone}</p>
+                                            <p className="text-sm text-gray-700 font-medium">
+                                                {mechanic.phone || mechanic.mechanic?.phone || mechanic.user?.phone || mechanic.mobile || mechanic.mechanic?.mobile || mechanic.contact_number || 'N/A'}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -802,7 +829,7 @@ export default function NearbyMechanics() {
                                     }`}
                             >
                                 <Phone size={20} />
-                                {isOnline ? `Call ${mechanic.full_name?.split(' ')[0]} ` : 'Currently Unavailable'}
+                                {isOnline ? `Call ${(mechanic.full_name || mechanic.mechanic?.full_name || mechanic.user?.full_name || mechanic.shop_name || 'Mechanic').split(' ')[0]} ` : 'Currently Unavailable'}
                             </button>
 
                             {!isOnline && (

@@ -16,7 +16,9 @@ import {
     CircleHelp
 } from 'lucide-react';
 import api from '../utils/api';
+import apiVercel from '../utils/apiVercel';
 import { toast } from 'react-hot-toast';
+import { Search, Info, AlertCircle } from 'lucide-react';
 import PlacePickerGujarat from '../components/PlacePickerGujarat'; // Import the updated component
 import Navbar from '../components/Navbar';
 
@@ -78,7 +80,10 @@ export default function PunctureRequestFormRedesigned() {
             latitude: null,
             longitude: null,
             problem: '',
-            additionalNotes: ''
+            additionalNotes: '',
+            vehicleNumber: '',
+            fillMode: null, // 'rc' or 'manual'
+            rcData: null
         };
     });
 
@@ -98,7 +103,13 @@ export default function PunctureRequestFormRedesigned() {
     };
 
     const handleNext = () => step < 3 && setStep(step + 1);
-    const handlePrev = () => step > 1 && setStep(step - 1);
+    const handlePrev = () => {
+        if (step === 1 && formData.fillMode) {
+            setFormData(prev => ({ ...prev, fillMode: null, rcData: null, vehicleType: '', vehicleNumber: '' }));
+        } else if (step > 1) {
+            setStep(step - 1);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!formData.latitude || !formData.longitude) {
@@ -114,12 +125,13 @@ export default function PunctureRequestFormRedesigned() {
                 vehical_type: formData.vehicleType,
                 problem: formData.problem,
                 additional_details: formData.additionalNotes,
+                vehicle_number: formData.vehicleNumber,
             });
 
             if (response.status === 201) {
                 toast('Sended Request!', {
-  icon: '👍',
-});
+                    icon: '👍',
+                });
                 // ✨ ADDED: Clear localStorage on successful submission
                 navigate(`/finding/${response.data.request_id}`);
             } else {
@@ -131,7 +143,11 @@ export default function PunctureRequestFormRedesigned() {
     };
 
     const canProceed = () => {
-        if (step === 1) return !!formData.vehicleType;
+        if (step === 1) {
+            if (formData.fillMode === 'manual') return !!formData.vehicleType;
+            if (formData.fillMode === 'rc') return !!formData.rcData;
+            return false;
+        }
         if (step === 2) return formData.location.trim() !== '' && formData.location !== "Fetching address...";
         if (step === 3) return !!formData.problem;
         return false;
@@ -141,7 +157,7 @@ export default function PunctureRequestFormRedesigned() {
 
     return (
         <div className="min-h-screen bg-gray-300 text-gray-800 flex flex-col items-center justify-center p-4 font-sans">
-        <Navbar />
+            <Navbar />
             <div className="w-full max-w-2xl my-18">
                 <header className="text-center mb-2">
                     <h1 className="text-3xl font-bold tracking-tight">Roadside Assistance</h1>
@@ -177,7 +193,7 @@ export default function PunctureRequestFormRedesigned() {
                 <footer className="flex justify-between items-center mt-8">
                     <button
                         onClick={handlePrev}
-                        disabled={step === 1}
+                        disabled={step === 1 && !formData.fillMode}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-gray-700 bg-gray-300 shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <ChevronLeft size={18} />
@@ -212,26 +228,189 @@ export default function PunctureRequestFormRedesigned() {
 // --- STEP COMPONENTS ---
 // **FIX:** Moved outside the main component and now accept props
 
-const Step1_Vehicle = ({ formData, setFormData }) => (
-    <StepWrapper title="Select Your Vehicle">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            {vehicleTypes.map(vehicle => (
-                <SelectableCard
-                    key={vehicle.id}
-                    label={vehicle.name}
-                    icon={vehicle.icon}
-                    isSelected={formData.vehicleType === vehicle.id}
-                    onClick={() => setFormData(prev => ({ ...prev, vehicleType: vehicle.id, problem: '' }))}
-                />
-            ))}
-        </div>
-    </StepWrapper>
-);
+const Step1_Vehicle = ({ formData, setFormData }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handleRCSearch = async (e) => {
+        e.preventDefault();
+        const cleanedVehicleNumber = formData.vehicleNumber.toUpperCase().replace(/\s/g, '');
+
+        if (!cleanedVehicleNumber) {
+            setError('Please enter a vehicle number');
+            return;
+        }
+
+        const vehicleRegex = /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4}$/;
+        if (!vehicleRegex.test(cleanedVehicleNumber)) {
+            setError('Invalid format. Use XX00XX0000');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await apiVercel.post('/vehicle/rc-info', {
+                vehicle_number: cleanedVehicleNumber
+            });
+
+            if (response.data.success) {
+                const rcData = response.data.data || response.data;
+
+                // Try to auto-detect vehicle type
+                let vehicleType = 'car'; // Default
+                const vehicleClass = (rcData.class || '').toLowerCase();
+                if (vehicleClass.includes('cycle') || vehicleClass.includes('scooter') || vehicleClass.includes('two wheeler')) {
+                    vehicleType = 'bike';
+                } else if (vehicleClass.includes('truck') || vehicleClass.includes('heavy') || vehicleClass.includes('suv')) {
+                    vehicleType = 'truck';
+                }
+
+                setFormData(prev => ({
+                    ...prev,
+                    rcData: rcData,
+                    vehicleType: vehicleType
+                }));
+            } else {
+                setError(response.data.message || 'Failed to fetch vehicle information');
+            }
+        } catch (err) {
+            setError('Something went wrong. Please check number or try manual.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!formData.fillMode) {
+        return (
+            <StepWrapper title="How would you like to add your vehicle?">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <button
+                        onClick={() => setFormData(prev => ({ ...prev, fillMode: 'rc' }))}
+                        className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition-all group"
+                    >
+                        <div className="p-4 bg-blue-100 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                            <Search className="text-blue-600" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800">Search by RC</h3>
+                        <p className="text-sm text-gray-500 mt-2 text-center">Fastest way! Get vehicle details automatically.</p>
+                    </button>
+                    <button
+                        onClick={() => setFormData(prev => ({ ...prev, fillMode: 'manual' }))}
+                        className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] hover:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition-all group"
+                    >
+                        <div className="p-4 bg-orange-100 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                            <Car className="text-orange-600" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800">Fill Manually</h3>
+                        <p className="text-sm text-gray-500 mt-2 text-center">Select your vehicle type and details manually.</p>
+                    </button>
+                </div>
+            </StepWrapper>
+        );
+    }
+
+    if (formData.fillMode === 'rc') {
+        return (
+            <StepWrapper title="Enter Vehicle RC Number">
+                <div className="space-y-6">
+                    <form onSubmit={handleRCSearch} className="relative">
+                        <input
+                            type="text"
+                            placeholder="e.g. GJ27AA3978"
+                            className="w-full pl-4 pr-32 py-4 bg-gray-200 text-gray-800 border-2 border-transparent rounded-2xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] focus:border-blue-500 outline-none text-lg font-bold tracking-widest uppercase transition-all"
+                            value={formData.vehicleNumber}
+                            onChange={(e) => {
+                                setFormData(prev => ({ ...prev, vehicleNumber: e.target.value }));
+                                setError(null);
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`absolute right-2 top-2 bottom-2 px-6 rounded-xl font-bold text-white shadow-lg transition-all ${loading ? 'bg-blue-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                                }`}
+                        >
+                            {loading ? '...' : 'Search'}
+                        </button>
+                    </form>
+
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600 text-sm">
+                            <AlertCircle size={18} />
+                            <p>{error}</p>
+                        </div>
+                    )}
+
+                    {formData.rcData && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 bg-gray-100 border border-gray-200 rounded-2xl shadow-sm"
+                        >
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-blue-100 rounded-xl">
+                                    <Car className="text-blue-600" size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-gray-800">{formData.rcData.brand_model || 'Vehicle Detected'}</h4>
+                                    <p className="text-sm text-gray-500">{formData.rcData.license_plate}</p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <span className="px-2 py-1 bg-gray-200 text-gray-600 text-[10px] font-bold rounded uppercase">
+                                            {formData.rcData.fuel_type}
+                                        </span>
+                                        <span className="px-2 py-1 bg-gray-200 text-gray-600 text-[10px] font-bold rounded uppercase">
+                                            {formData.rcData.class}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    <div className="flex justify-center mt-4">
+                        <button
+                            onClick={() => setFormData(prev => ({ ...prev, fillMode: 'manual', rcData: null }))}
+                            className="text-blue-600 text-sm font-semibold hover:underline flex items-center gap-1"
+                        >
+                            <Info size={14} /> Or fill details manually
+                        </button>
+                    </div>
+                </div>
+            </StepWrapper>
+        );
+    }
+
+    return (
+        <StepWrapper title="Select Your Vehicle Type">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {vehicleTypes.map(vehicle => (
+                    <SelectableCard
+                        key={vehicle.id}
+                        label={vehicle.name}
+                        icon={vehicle.icon}
+                        isSelected={formData.vehicleType === vehicle.id}
+                        onClick={() => setFormData(prev => ({ ...prev, vehicleType: vehicle.id, problem: '' }))}
+                    />
+                ))}
+            </div>
+            <div className="flex justify-center mt-6">
+                <button
+                    onClick={() => setFormData(prev => ({ ...prev, fillMode: 'rc', vehicleType: '' }))}
+                    className="text-blue-600 text-sm font-semibold hover:underline"
+                >
+                    Switch to RC Search
+                </button>
+            </div>
+        </StepWrapper>
+    );
+};
 
 const Step2_Location = ({ formData, handleLocationChange }) => (
     <StepWrapper title="Confirm Your Location in Gujarat">
         <div className="space-y-4">
-        
+
 
             <PlacePickerGujarat
                 value={{
