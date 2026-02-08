@@ -45,15 +45,26 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post("/api/core/token/refresh/", {}, { withCredentials: true });
+        const refreshToken = Cookies.get("refresh");
+        const csrftoken = Cookies.get("csrftoken"); // Get CSRF token
+
+        await axios.post("http://localhost:3000/api/auth/refresh",
+          { refresh: refreshToken },
+          {
+            withCredentials: true,
+            headers: {
+              'X-CSRFToken': csrftoken // Attach CSRF token
+            }
+          }
+        );
 
         isRefreshing = false;
         onRefreshed();
-        const hi = Cookies.set("Logged", true )
+        Cookies.set("Logged", true);
         return api(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
-        Cookies.set("Logged", false )
+        Cookies.set("Logged", false)
 
         // Redirect only if not already on login page
         if (!window.location.pathname.includes("/login")) {

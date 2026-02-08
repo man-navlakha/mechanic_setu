@@ -1,7 +1,7 @@
 // File: src/components/Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogIn, UserPlus, LogOut, Search } from "lucide-react";
+import { Menu, X, User, LogIn, UserPlus, LogOut, Search, Car } from "lucide-react";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,6 +65,10 @@ export default function Navbar() {
       <NavLink to="/vehicle-rc" className={getActiveClassName}>
         <Search size={18} />
         RC Check
+      </NavLink>
+      <NavLink to="/dashboard/vehicles" className={getActiveClassName}>
+        <Car size={18} className="mr-1" />
+        Dashboard
       </NavLink>
     </>
   );
