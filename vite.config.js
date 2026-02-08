@@ -6,11 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api/auth/refresh': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
+
       '/api': {
         target: 'https://mechanic-setu.onrender.com',
         changeOrigin: true,

@@ -40,7 +40,9 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Prevent infinite loop if refresh request itself fails
-    const isRefreshRequest = originalRequest.url.includes("/auth/refresh");
+    // or if the URL is undefined
+    const url = originalRequest.url || "";
+    const isRefreshRequest = url.includes("core/token/refresh");
 
     if (
       error.response?.status === 401 &&
@@ -60,20 +62,24 @@ api.interceptors.response.use(
         const refreshToken = Cookies.get("refresh");
         const csrftoken = Cookies.get("csrftoken"); // Get CSRF token
 
-        // This stays on port 5173, letting Vite proxy handle the redirect to 3000.
-        const res = await axios.post("/api/auth/refresh",
+        // Correct Django endpoint for Render backend
+        const res = await axios.post("api/core/token/refresh/",
           { refresh: refreshToken },
           {
             withCredentials: true,
             headers: {
-              'X-CSRFToken': csrftoken // Attach CSRF token
+              'X-CSRFToken': csrftoken
             }
           }
         );
 
+        console.log("Refresh successful, updating cookies...");
+
         // Sync tokens manually into cookies if the backend returned them in the body
         if (res.data?.access) {
           Cookies.set("access", res.data.access);
+          // Also set Authorization header for subsequent requests
+          api.defaults.headers.common['Authorization'] = `Bearer ${res.data.access}`;
         }
         if (res.data?.refresh) {
           Cookies.set("refresh", res.data.refresh);
@@ -83,13 +89,14 @@ api.interceptors.response.use(
         onRefreshed();
         Cookies.set("Logged", true);
 
-        // Update the header for the retried request
+        // Update the header for the retried request specifically
         if (res.data?.access) {
           originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
         }
 
         return api(originalRequest);
       } catch (refreshError) {
+        console.error("Refresh failed, logging out:", refreshError);
         isRefreshing = false;
         Cookies.set("Logged", false);
         Cookies.remove("access");
