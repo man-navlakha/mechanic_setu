@@ -48,7 +48,7 @@ api.interceptors.response.use(
         const refreshToken = Cookies.get("refresh");
         const csrftoken = Cookies.get("csrftoken"); // Get CSRF token
 
-        await axios.post("http://localhost:3000/api/auth/refresh",
+        await axios.post("https://mechanic-setu-backend.vercel.app/api/auth/refresh",
           { refresh: refreshToken },
           {
             withCredentials: true,
