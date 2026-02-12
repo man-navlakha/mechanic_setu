@@ -26,7 +26,7 @@ const VehicleDashboard = () => {
         setLoading(true);
         try {
             // Updated to fetch user's own vehicles with insurance status
-            const response = await api.get(`/vehicle/my-vehicles?search=${searchTerm}`);
+            const response = await api.get(`/vehicle/saved?search=${searchTerm}`);
             if (response.data.success) {
                 setVehicles(response.data.data || []);
             }

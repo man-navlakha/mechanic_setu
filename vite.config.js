@@ -8,10 +8,11 @@ export default defineConfig({
     proxy: {
 
       '/api': {
-        target: 'https://mechanic-setu.onrender.com',
+        target: 'https://mechanic-setu-backend.vercel.app',
         changeOrigin: true,
         secure: true,
       },
+      
       '/ws': {
         target: 'wss://mechanic-setu.onrender.com',
         ws: true,

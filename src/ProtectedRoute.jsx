@@ -3,6 +3,28 @@ import { useState, useEffect } from "react";
 import api from "./utils/api";
 import './pp.css'
 
+const readCookie = (name) => {
+  if (typeof document === "undefined") return null;
+  const nameEQ = `${name}=`;
+  return document.cookie
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(nameEQ))
+    ?.slice(nameEQ.length)
+    || null;
+};
+
+const syncAccessTokenFromCookie = () => {
+  if (typeof window === "undefined") return null;
+  const storedToken = localStorage.getItem("access");
+  const cookieToken = readCookie("access");
+  if (cookieToken && storedToken !== cookieToken) {
+    localStorage.setItem("access", cookieToken);
+    console.log("[ProtectedRoute] Synced access token from cookie to localStorage");
+  }
+  return storedToken || cookieToken;
+};
+
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const location = useLocation();
@@ -10,9 +32,29 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        await api.get("core/me/");
+        console.log("[ProtectedRoute] Checking auth via GET /api/core/me/", {
+          path: location.pathname,
+          search: location.search,
+        });
+        const token = syncAccessTokenFromCookie();
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+        const response = await api.get("core/me/", {
+          headers,
+        });
+        console.log("[ProtectedRoute] Auth check succeeded:", {
+          status: response?.status,
+          data: response?.data,
+        });
         setIsAuthenticated(true);
       } catch (error) {
+        console.error("[ProtectedRoute] Auth check failed for /api/core/me/", {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+          url: error?.config?.url,
+          method: error?.config?.method,
+        });
+        debugger;
         setIsAuthenticated(false);
       }
     };

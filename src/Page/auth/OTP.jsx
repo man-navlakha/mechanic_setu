@@ -130,6 +130,11 @@ const OtpPage = () => {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    verifyOtp();
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-800 via-slate-900 to-blue-900 p-4">
       <div className="w-full max-w-md p-8 space-y-6 text-center bg-white/10 backdrop-blur-md rounded-xl shadow-lg border border-white/20">
@@ -139,7 +144,7 @@ const OtpPage = () => {
           <p className="text-sm text-gray-300 italic">Always at emergency</p>
         </div>
 
-        <div className="space-y-4 text-white">
+        <form className="space-y-4 text-white" onSubmit={handleFormSubmit}>
           <h2 className="text-2xl font-semibold">Enter Verification Code</h2>
           <p className="text-gray-300">
             A 6-digit OTP has been sent to {ctx.email || 'your email'}.
@@ -166,8 +171,7 @@ const OtpPage = () => {
 
           <button
             ref={verifyButtonRef} // ✨ Added ref to the button
-            type="button"
-            onClick={verifyOtp}
+            type="submit"
             className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:scale-95 transition-transform"
           >
             Verify
@@ -184,7 +188,7 @@ const OtpPage = () => {
               {isResendDisabled ? `Resend in ${formatTime(timer)}` : 'Resend'}
             </button>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -3,6 +3,25 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import api from '../../utils/api';
 
+const readCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  const nameEQ = `${name}=`;
+  return (
+    document.cookie
+      .split(';')
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith(nameEQ))
+      ?.slice(nameEQ.length) || null
+  );
+};
+
+const getAccessToken = () => {
+  if (typeof window === 'undefined') return null;
+  const localToken = localStorage.getItem('access');
+  const cookieToken = readCookie('access');
+  return localToken || cookieToken;
+};
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,7 +39,9 @@ const LoginPage = () => {
   const checkLoginStatus = useCallback(async () => {
     try {
       // This request will either succeed or throw a 401 error
-      await api.get("core/me/");
+      const token = getAccessToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      await api.get("core/me/", { headers });
       // If it succeeds, the user is already logged in, so redirect them
       navigate(redirectPath, { replace: true });
     } catch (err) {

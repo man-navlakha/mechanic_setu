@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { CheckCircle, XCircle, Clock, Car, Bike, Truck, Bus } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import axios from 'axios';
 
 // --- Reusable Editable Field Component ---
 const EditableField = React.memo(({ label, name, value, onChange, type = "text" }) => (
@@ -204,7 +205,8 @@ const ProfilePage = () => {
 
         const fetchMyVehicles = async () => {
             try {
-                const response = await api.get('/vehicle/my-vehicles');
+                const email = localStorage.getItem('email');
+                const response = await axios.get(`https://mechanic-setu-backend.vercel.app/api/vehicle/my-vehicles?email=${email}`);
                 if (response.data.success) {
                     setMyVehicles(response.data.data || []);
                 }

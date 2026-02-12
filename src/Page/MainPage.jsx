@@ -22,7 +22,21 @@ const MainPage = () => {
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [activeJob, setActiveJob] = useState(null);
   const [mapAds, setMapAds] = useState([]);
+  const [isWithinAhmedabad, setIsWithinAhmedabad] = useState(null);
 
+  const AH_BOUNDS = {
+    south: 22.7,
+    north: 23.35,
+    west: 72.35,
+    east: 72.95,
+  };
+
+  const AH_CENTER = { lat: 23.0225, lng: 72.5714 };
+  const isWithinAhmedabadBounds = (lat, lng) =>
+    lat >= AH_BOUNDS.south &&
+    lat <= AH_BOUNDS.north &&
+    lng >= AH_BOUNDS.west &&
+    lng <= AH_BOUNDS.east;
   // Fetch Active Job
   useEffect(() => {
     const checkForJobAndSync = async () => {
@@ -106,10 +120,14 @@ const MainPage = () => {
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      center: [77.2090, 28.6139], // Delhi Fallback
+      center: [AH_CENTER.lng, AH_CENTER.lat],
       zoom: 13,
       style: `https://api.maptiler.com/maps/019b64a4-ef96-7e83-9a23-dde0df92b2ba/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
       attributionControl: false,
+      maxBounds: new maplibregl.LngLatBounds(
+        [AH_BOUNDS.west, AH_BOUNDS.south],
+        [AH_BOUNDS.east, AH_BOUNDS.north]
+      ),
     });
     mapInstanceRef.current = map;
 
@@ -238,20 +256,34 @@ const MainPage = () => {
 
     setLocationStatus("getting");
     setShowLocationPrompt(false);
+    setIsWithinAhmedabad(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const pos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        setUserPosition(pos);
-        setLocationStatus("success");
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const insideAhmedabad = isWithinAhmedabadBounds(latitude, longitude);
+        setIsWithinAhmedabad(insideAhmedabad);
+        setLocationStatus(insideAhmedabad ? "success" : "outside");
 
         const map = mapInstanceRef.current;
+        if (!insideAhmedabad) {
+          if (map) {
+            if (userMarkerRef.current) {
+              userMarkerRef.current.remove();
+              userMarkerRef.current = null;
+            }
+            map.setCenter([AH_CENTER.lng, AH_CENTER.lat]);
+          }
+          setUserPosition(null);
+          return;
+        }
+
+        const pos = { lat: latitude, lng: longitude };
+        setUserPosition(pos);
+
         if (map) {
           map.setCenter([pos.lng, pos.lat]);
-
           if (userMarkerRef.current) {
             userMarkerRef.current.setLngLat([pos.lng, pos.lat]);
           } else {
@@ -338,6 +370,17 @@ const MainPage = () => {
           >
             Retry
           </button>
+        </div>
+      )}
+      {isWithinAhmedabad === false && (
+        <div className="absolute top-20 right-4 z-20 w-80 rounded-xl border border-red-300 bg-white/90 p-4 shadow-lg">
+          <p className="text-sm font-semibold text-red-600">Ahmedabad geofence</p>
+          <p className="text-xs text-gray-700 mt-1">
+            Mechanic Setu is currently active only inside Ahmedabad (lat 22.7–23.35, lng 72.35–72.95). Your current coordinates are outside that zone, so the map stays locked to Ahmedabad.
+          </p>
+          <p className="mt-2 text-[11px] text-gray-500">
+            Please tap “Retry” (above) after moving inside Ahmedabad or manually explore the city area on the map to place a request.
+          </p>
         </div>
       )}
     </div>
