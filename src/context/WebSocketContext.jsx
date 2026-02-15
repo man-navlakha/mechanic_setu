@@ -23,17 +23,11 @@ export const WebSocketProvider = ({ children }) => {
       console.log('%c[WS-PROVIDER] Attempting to connect...', 'color: #8A2BE2;');
 
       try {
-        const res = await api.get("core/ws-token/", { withCredentials: true });
+        const res = await api.get("https://mechanic-setu.onrender.com/api/core/ws-token/", { withCredentials: true });
         const wsToken = res.data.ws_token;
         if (!wsToken) throw new Error("Failed to get WebSocket token");
 
-        const isProduction = import.meta.env.PROD;
-        const wsScheme = isProduction ? "wss" : "ws";
-        const backendHost = isProduction
-          ? (import.meta.env.VITE_BACKEND_HOST || 'mechanic-setu.onrender.com').replace(/^(https?:\/\/)/, '')
-          : window.location.host;
-        
-        const wsUrl = `${wsScheme}://${backendHost}/ws/job_notifications/?token=${wsToken}`;
+        const wsUrl = `wss://mechanic-setu.onrender.com/ws/job_notifications/?token=${wsToken}`;
         console.log(`%c[WS-PROVIDER] Connecting to: ${wsUrl}`, 'color: #0000FF;');
         ws.current = new WebSocket(wsUrl);
 

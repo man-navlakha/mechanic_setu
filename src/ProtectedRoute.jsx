@@ -36,11 +36,8 @@ const ProtectedRoute = ({ children }) => {
           path: location.pathname,
           search: location.search,
         });
-        const token = syncAccessTokenFromCookie();
-        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-        const response = await api.get("core/me/", {
-          headers,
-        });
+        syncAccessTokenFromCookie();
+        const response = await api.get("core/me/");
         console.log("[ProtectedRoute] Auth check succeeded:", {
           status: response?.status,
           data: response?.data,

@@ -64,7 +64,7 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      const res = await api.post('/users/Login_SignUp/', { email });
+      const res = await api.post('/users/Login_SignUp', { email }, { withCredentials: true });
       navigate("/verify", { state: { key: res.data.key, id: res.data.id, status: res.data.status, email: email } });
     } catch (err) {
       console.error("Login failed:", err);
@@ -82,7 +82,7 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      const res = await api.post("/users/google/", { token: credentialResponse.credential });
+      const res = await api.post("/users/google/", { token: credentialResponse.credential }, { withCredentials: true });
 
       // After successful Google login, the backend should set the necessary session/token
       // Then we can navigate the user
