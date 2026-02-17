@@ -7,6 +7,7 @@ import { Toaster, toast } from 'react-hot-toast';
 
 // Page Imports
 import MainPage from "./Page/MainPage";
+import Home from "./Page/Home";
 import Login from "./Page/auth/Login";
 import OTP from "./Page/auth/OTP";
 import Logout from "./Page/auth/Logout";
@@ -79,7 +80,10 @@ export default function App() {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<OTP />} />
+        <Route path="/" element={<Home />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/nearby-mechanics" element={<NearbyMechanics />} />
+        <Route path="/vehicle-rc" element={<RCInfo />} />
 
 
 
@@ -92,12 +96,12 @@ export default function App() {
               <WebSocketProvider>
                 <GlobalSocketHandler />
                 <Routes>
-                  <Route path="/" element={<MainPage />} />
+                  <Route path="/home" element={<MainPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/form" element={<ProcessForm />} />
                   <Route path="/request" element={<PunctureRequestForm />} />
                   {/* Temporary Public Routes for Testing */}
-                  <Route path="/nearby-mechanics" element={<NearbyMechanics />} />
+                 
                   <Route path="/ms" element={<MechanicRegistration />} />
                   <Route path="/ms/list" element={<MechanicList />} />
                   <Route path="/ms/view/:id" element={<MechanicDetail />} />
