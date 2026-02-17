@@ -64,7 +64,7 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      const res = await api.post('/users/Login_SignUp', { email }, { withCredentials: true });
+      const res = await api.post('/users/Login_SignUp/', { email }, { withCredentials: true });
       navigate("/verify", { state: { key: res.data.key, id: res.data.id, status: res.data.status, email: email } });
     } catch (err) {
       console.error("Login failed:", err);
