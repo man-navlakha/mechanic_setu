@@ -76,7 +76,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
 
         {/* LOGO */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/home" className="flex items-center gap-2">
           <img src="/ms.png" alt="Mechanic Setu" className="w-9 h-9 sm:w-10 sm:h-10" />
           <h1 className="text-lg sm:text-xl font-bold text-gray-900">Mechanic Setu</h1>
         </Link>

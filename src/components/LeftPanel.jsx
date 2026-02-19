@@ -255,7 +255,7 @@ export default function LeftPanel({ activeJob }) {
             </div>
 
             {/* Mobile Quick Actions - Only visible on mobile */}
-            <div className="md:hidden w-full">
+            <div className="md:hidden w-full pb-10 mb-4">
                 {/* Mobile Vehicle Selector */}
                 <div className="mb-2 relative">
                     <button

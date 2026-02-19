@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import LeftPanel from "../components/LeftPanel";
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Crosshair } from 'lucide-react';
 import api from "../utils/api";
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -15,6 +15,8 @@ const MainPage = () => {
   const mapInstanceRef = useRef(null);
   const userMarkerRef = useRef(null);
   const adMarkersRef = useRef([]);
+  const mechanicMarkersRef = useRef([]);
+  const hasFitBoundsRef = useRef(false);
 
   const [userPosition, setUserPosition] = useState(null);
   const [mapStatus, setMapStatus] = useState("loading");
@@ -22,21 +24,19 @@ const MainPage = () => {
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [activeJob, setActiveJob] = useState(null);
   const [mapAds, setMapAds] = useState([]);
-  const [isWithinAhmedabad, setIsWithinAhmedabad] = useState(null);
+  const [nearbyMechanics, setNearbyMechanics] = useState([]);
 
-  const AH_BOUNDS = {
-    south: 22.99,
-    north: 23.04,
-    west: 72.53,
-    east: 72.58,
-  };
+  const DEFAULT_CENTER = { lat: 23.015, lng: 72.555 };
+  const NEARBY_MECHANIC_RADIUS_KM = 8;
 
-  const AH_CENTER = { lat: 23.015, lng: 72.555 };
-  const isWithinAhmedabadBounds = (lat, lng) =>
-    lat >= AH_BOUNDS.south &&
-    lat <= AH_BOUNDS.north &&
-    lng >= AH_BOUNDS.west &&
-    lng <= AH_BOUNDS.east;
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+
   // Fetch Active Job
   useEffect(() => {
     const checkForJobAndSync = async () => {
@@ -113,6 +113,34 @@ const MainPage = () => {
     fetchAds();
   }, []);
 
+  // Fetch nearby mechanics (for map markers)
+  useEffect(() => {
+    const fetchNearbyMechanics = async () => {
+      if (!userPosition) {
+        setNearbyMechanics([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/nearby?latitude=${userPosition.lat}&longitude=${userPosition.lng}&radius=${NEARBY_MECHANIC_RADIUS_KM}`
+        );
+        const data = await response.json();
+        if (data?.success) {
+          setNearbyMechanics(data.mechanics || []);
+        } else {
+          setNearbyMechanics([]);
+        }
+      } catch (error) {
+        console.error("Failed to load nearby mechanics", error);
+        setNearbyMechanics([]);
+      }
+    };
+
+    hasFitBoundsRef.current = false;
+    fetchNearbyMechanics();
+  }, [userPosition]);
+
   // Initialize Map
   useEffect(() => {
     if (mapInstanceRef.current) return;
@@ -120,66 +148,16 @@ const MainPage = () => {
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      center: [AH_CENTER.lng, AH_CENTER.lat],
+      center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
       zoom: 13,
       style: `https://api.maptiler.com/maps/019b64a4-ef96-7e83-9a23-dde0df92b2ba/style.json?key=wf1HtIzvVsvPfvNrhwPz`,
       attributionControl: false,
-      maxBounds: new maplibregl.LngLatBounds(
-        [AH_BOUNDS.west, AH_BOUNDS.south],
-        [AH_BOUNDS.east, AH_BOUNDS.north]
-      ),
     });
     mapInstanceRef.current = map;
 
     map.on('load', () => {
       setMapStatus("loaded");
       getUserLocation();
-
-      // Add Ahmedabad geofence polygon (dark-blue line + subtle fill)
-      const geofenceCoords = [
-        [AH_BOUNDS.west, AH_BOUNDS.south],
-        [AH_BOUNDS.east, AH_BOUNDS.south],
-        [AH_BOUNDS.east, AH_BOUNDS.north],
-        [AH_BOUNDS.west, AH_BOUNDS.north],
-        [AH_BOUNDS.west, AH_BOUNDS.south]
-      ];
-
-      if (!map.getSource('ah-geofence')) {
-        map.addSource('ah-geofence', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [geofenceCoords]
-            }
-          }
-        });
-
-        // subtle fill so users can see the fenced area
-        map.addLayer({
-          id: 'ah-geofence-fill',
-          type: 'fill',
-          source: 'ah-geofence',
-          layout: {},
-          paint: {
-            'fill-color': '#ef4444',
-            'fill-opacity': 0.1
-          }
-        });
-
-        // dark-blue boundary line
-        map.addLayer({
-          id: 'ah-geofence-line',
-          type: 'line',
-          source: 'ah-geofence',
-          layout: {},
-          paint: {
-            'line-color': '#dc2626',
-            'line-width': 3
-          }
-        });
-      }
     });
   }, []);
 
@@ -292,6 +270,146 @@ const MainPage = () => {
     }
   }, [mapAds, mapStatus, userPosition]);
 
+  // Render nearby mechanics on the map
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || mapStatus !== "loaded") return;
+
+    // Clear existing mechanic markers
+    mechanicMarkersRef.current.forEach((marker) => marker.remove());
+    mechanicMarkersRef.current = [];
+
+    nearbyMechanics.forEach((mech) => {
+      const lat =
+        mech.shop_latitude ||
+        mech.current_latitude ||
+        mech.location?.shop?.latitude;
+      const lng =
+        mech.shop_longitude ||
+        mech.current_longitude ||
+        mech.location?.shop?.longitude;
+
+      if (!lat || !lng) return;
+
+      const isOnline = mech.status === "ONLINE";
+      const isVerified = !!mech.is_verified;
+      const shopName = mech.shop_name || "Mechanic";
+      const distanceText =
+        mech.distance_text ||
+        (typeof mech.distance_km === "number"
+          ? `${mech.distance_km.toFixed(1)} km`
+          : "");
+
+      const el = document.createElement("div");
+      el.className = "mechanic-marker";
+      el.style.cssText = `
+        width: 44px;
+        height: 44px;
+        border-radius: 9999px;
+        background: #ffffff;
+        padding: 2px;
+        border: 3px solid ${isOnline ? "#10b981" : "#9ca3af"};
+        box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+        cursor: pointer;
+        overflow: hidden;
+      `;
+
+      const img = document.createElement("div");
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.borderRadius = "9999px";
+      img.style.backgroundImage = `url(${mech.shop_photo || ""})`;
+      img.style.backgroundSize = "cover";
+      img.style.backgroundPosition = "center";
+      img.style.backgroundColor = "#f3f4f6";
+      el.appendChild(img);
+
+      const statusDot = document.createElement("div");
+      statusDot.style.cssText = `
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 9999px;
+        background: ${isOnline ? "#10b981" : "#9ca3af"};
+        border: 2px solid #ffffff;
+      `;
+      el.appendChild(statusDot);
+
+      if (isVerified) {
+        const verifiedBadge = document.createElement("div");
+        verifiedBadge.style.cssText = `
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          background: #3b82f6;
+          border: 2px solid #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        verifiedBadge.innerHTML =
+          '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        el.appendChild(verifiedBadge);
+      }
+
+      const popupHTML = `
+        <div style="min-width: 200px;">
+          <div style="font-weight: 800; font-size: 13px;">${escapeHtml(shopName)}</div>
+          ${
+            distanceText
+              ? `<div style="margin-top: 2px; font-size: 12px; color: #6b7280;">${escapeHtml(distanceText)} away</div>`
+              : ""
+          }
+          ${
+            mech.shop_address
+              ? `<div style="margin-top: 6px; font-size: 12px; color: #374151;">${escapeHtml(mech.shop_address)}</div>`
+              : ""
+          }
+          <div style="margin-top: 8px; font-size: 12px; font-weight: 800; color: ${isOnline ? "#10b981" : "#6b7280"};">
+            ${isOnline ? "ONLINE" : "OFFLINE"}
+            ${isVerified ? `<span style="margin-left: 8px; color: #3b82f6;">VERIFIED</span>` : ""}
+          </div>
+        </div>
+      `;
+
+      const popup = new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(
+        popupHTML
+      );
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .setPopup(popup)
+        .addTo(map);
+
+      mechanicMarkersRef.current.push(marker);
+    });
+
+    if (!hasFitBoundsRef.current && userPosition && nearbyMechanics.length > 0) {
+      const bounds = new maplibregl.LngLatBounds();
+      bounds.extend([userPosition.lng, userPosition.lat]);
+
+      nearbyMechanics.forEach((mech) => {
+        const lat =
+          mech.shop_latitude ||
+          mech.current_latitude ||
+          mech.location?.shop?.latitude;
+        const lng =
+          mech.shop_longitude ||
+          mech.current_longitude ||
+          mech.location?.shop?.longitude;
+        if (lat && lng) bounds.extend([lng, lat]);
+      });
+
+      map.fitBounds(bounds, { padding: 90, maxZoom: 15, duration: 900 });
+      hasFitBoundsRef.current = true;
+    }
+  }, [nearbyMechanics, mapStatus, userPosition]);
+
   // Get user's live location
   const getUserLocation = () => {
     if (!navigator.geolocation) {
@@ -302,29 +420,14 @@ const MainPage = () => {
 
     setLocationStatus("getting");
     setShowLocationPrompt(false);
-    setIsWithinAhmedabad(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-        const insideAhmedabad = isWithinAhmedabadBounds(latitude, longitude);
-        setIsWithinAhmedabad(insideAhmedabad);
-        setLocationStatus(insideAhmedabad ? "success" : "outside");
+        setLocationStatus("success");
 
         const map = mapInstanceRef.current;
-        if (!insideAhmedabad) {
-          if (map) {
-            if (userMarkerRef.current) {
-              userMarkerRef.current.remove();
-              userMarkerRef.current = null;
-            }
-            map.setCenter([AH_CENTER.lng, AH_CENTER.lat]);
-          }
-          setUserPosition(null);
-          return;
-        }
-
         const pos = { lat: latitude, lng: longitude };
         setUserPosition(pos);
 
@@ -418,17 +521,15 @@ const MainPage = () => {
           </button>
         </div>
       )}
-      {isWithinAhmedabad === false && (
-        <div className="absolute top-20 right-4 z-20 w-80 rounded-xl border border-red-300 bg-white/90 p-4 shadow-lg">
-          <p className="text-sm font-semibold text-red-600">Service Area</p>
-          <p className="text-xs text-gray-700 mt-1">
-            Mechanic Setu is currently active only in Anjali, Paldi, and Nehrunagar (Ambavadi). Your current coordinates are outside that zone.
-          </p>
-          <p className="mt-2 text-[11px] text-gray-500">
-            Please tap “Retry” (above) after moving inside the service area or manually explore the area on the map to place a request.
-          </p>
-        </div>
-      )}
+
+      {/* Current Location Button */}
+      <button
+        onClick={getUserLocation}
+        className="absolute bottom-8 right-4 z-10 bg-white p-3 rounded-full shadow-xl hover:bg-gray-50 transition-transform active:scale-95 border border-gray-100"
+        title="Show current location"
+      >
+        <Crosshair className="w-6 h-6 text-blue-600" />
+      </button>
     </div>
   );
 };
