@@ -100,8 +100,8 @@ export default function LeftPanel({ activeJob }) {
 
     return (
         <aside className="
-      w-full bg-gray-300 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] p-4 flex flex-col items-center justify-start space-y-4
-      md:static md:h-auto md:w-80
+      w-full bg-gray-100 border-5 border-gray-500/10 rounded-3xl shadow-[3px_3px_6px_#FFFFFF,-3px_-3px_6px_#d9d9d9] p-4 flex flex-col items-center justify-start space-y-4
+      md:static md:h-auto md:w-80  pb-20 md:pb-20 lg:pb-3 -px-4 -mb-6
       fixed pb-8 bottom-0 left-1/2 -translate-x-1/2 z-50
       md:translate-x-0 md:bottom-auto">
 
@@ -142,7 +142,7 @@ export default function LeftPanel({ activeJob }) {
             )}
 
             {/* Past Order Card */}
-            <div className="hidden md:flex w-full bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] flex-col p-4 text-gray-600 text-sm">
+            <div className="hidden md:flex w-full bg-gray-100/30 rounded-2xl  flex-col p-4 text-gray-600 text-sm">
                 <h3 className="font-bold text-xl mb-3 text-gray-800">Recent Orders</h3>
                 <div className="overflow-auto max-h-[180px] space-y-3 px-3 py-1">
                     {orderHistory.length > 0 ? (
@@ -161,8 +161,8 @@ export default function LeftPanel({ activeJob }) {
             </div>
 
             {/* Quick Services Section */}
-            <div className="hidden md:flex w-full bg-gray-200 rounded-2xl shadow-[3px_3px_6px_#BABECC,-3px_-3px_6px_#FFFFFF] flex-col p-4">
-                <div className="flex items-center justify-between mb-3">
+            <div className="hidden md:flex w-full bg-gray-200 rounded-2xl flex-col p-4">
+                <div className="flex items-center justify-between ">
                     <h3 className="font-bold text-xl text-gray-800">Quick Services</h3>
                     
                     {/* Vehicle Dropdown */}
@@ -255,7 +255,7 @@ export default function LeftPanel({ activeJob }) {
             </div>
 
             {/* Mobile Quick Actions - Only visible on mobile */}
-            <div className="md:hidden w-full pb-10 mb-4">
+            <div className="md:hidden w-full ">
                 {/* Mobile Vehicle Selector */}
                 <div className="mb-2 relative">
                     <button

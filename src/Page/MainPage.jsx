@@ -525,7 +525,7 @@ const MainPage = () => {
       {/* Current Location Button */}
       <button
         onClick={getUserLocation}
-        className="absolute bottom-8 right-4 z-10 bg-white p-3 rounded-full shadow-xl hover:bg-gray-50 transition-transform active:scale-95 border border-gray-100"
+        className="absolute top-20 right-4 z-10 bg-white p-3 rounded-full shadow-xl hover:bg-gray-50 transition-transform active:scale-95 border border-gray-100"
         title="Show current location"
       >
         <Crosshair className="w-6 h-6 text-blue-600" />
