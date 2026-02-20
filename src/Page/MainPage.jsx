@@ -17,6 +17,7 @@ const MainPage = () => {
   const adMarkersRef = useRef([]);
   const mechanicMarkersRef = useRef([]);
   const hasFitBoundsRef = useRef(false);
+  const watchIdRef = useRef(null);
 
   const [userPosition, setUserPosition] = useState(null);
   const [mapStatus, setMapStatus] = useState("loading");
@@ -99,6 +100,15 @@ const MainPage = () => {
 
     checkForJobAndSync();
   }, [navigate]);
+
+  // Cleanup geolocation watch on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, []);
 
   // Fetch Map Ads
   useEffect(() => {
@@ -421,7 +431,12 @@ const MainPage = () => {
     setLocationStatus("getting");
     setShowLocationPrompt(false);
 
-    navigator.geolocation.getCurrentPosition(
+    // Clear existing watch if any
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
@@ -432,7 +447,11 @@ const MainPage = () => {
         setUserPosition(pos);
 
         if (map) {
-          map.setCenter([pos.lng, pos.lat]);
+          map.flyTo({
+            center: [pos.lng, pos.lat],
+            speed: 1.5,
+            curve: 1,
+          });
           if (userMarkerRef.current) {
             userMarkerRef.current.setLngLat([pos.lng, pos.lat]);
           } else {
@@ -452,7 +471,7 @@ const MainPage = () => {
         setShowLocationPrompt(true);
         setLocationStatus("error");
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 

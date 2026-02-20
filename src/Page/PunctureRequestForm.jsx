@@ -71,22 +71,13 @@ export default function PunctureRequestFormRedesigned() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [step, setStep] = useState(1);
+    const vehicleIdFromQuery = searchParams.get('vehicleId');
+    const serviceFromQuery = searchParams.get('service');
+    const isScheduleService = serviceFromQuery === 'schedule-service';
 
     // ✨ MODIFIED: Initialize state from localStorage
     const [formData, setFormData] = useState(() => {
-        const savedData = localStorage.getItem(FORM_STORAGE_KEY);
-        if (savedData) {
-            try {
-                // Parse the saved JSON data
-                return JSON.parse(savedData);
-            } catch (e) {
-                console.error("Failed to parse saved form data", e);
-                // If parsing fails, remove the bad data
-                localStorage.removeItem(FORM_STORAGE_KEY);
-            }
-        }
-        // Return default state if nothing is saved or parsing failed
-        return {
+        const defaultState = {
             vehicleType: '',
             location: '',
             latitude: null,
@@ -94,9 +85,27 @@ export default function PunctureRequestFormRedesigned() {
             problem: '',
             additionalNotes: '',
             vehicleNumber: '',
+            scheduledDate: '',
+            scheduledTime: '',
             fillMode: null, // 'rc' or 'manual'
             rcData: null
         };
+
+        const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                return {
+                    ...defaultState,
+                    ...(parsed && typeof parsed === 'object' ? parsed : {}),
+                };
+            } catch (e) {
+                console.error("Failed to parse saved form data", e);
+                // If parsing fails, remove the bad data
+                localStorage.removeItem(FORM_STORAGE_KEY);
+            }
+        }
+        return defaultState;
     });
 
     // ✨ ADDED: useEffect to save data to localStorage on change
@@ -214,28 +223,55 @@ export default function PunctureRequestFormRedesigned() {
             return;
         }
 
+        if (isScheduleService && (!formData.scheduledDate || !formData.scheduledTime)) {
+            toast.error("Please select date and time for scheduled service.");
+            return;
+        }
+
+        const vehicleNumberClean = (formData.vehicleNumber || '')
+            .toUpperCase()
+            .replace(/\s/g, '');
+
         try {
-            const response = await api.post("/jobs/CreateServiceRequest/", {
+            const payload = {
                 latitude: formData.latitude,
                 longitude: formData.longitude,
                 location: formData.location,
                 vehical_type: formData.vehicleType,
                 problem: formData.problem,
                 additional_details: formData.additionalNotes,
-                vehicle_number: formData.vehicleNumber,
-            });
+                vehicle_number: vehicleNumberClean,
+                ...(serviceFromQuery ? { service: serviceFromQuery } : {}),
+                ...(vehicleIdFromQuery ? { vehicleId: Number(vehicleIdFromQuery) } : {}),
+            };
 
-            if (response.status === 201) {
+            if (isScheduleService) {
+                payload.date = formData.scheduledDate;
+                payload.time = formData.scheduledTime;
+                payload.day = new Date(`${formData.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                });
+            }
+
+            const response = await api.post("/jobs/CreateServiceRequest/", payload);
+            const requestId = response?.data?.request_id ?? response?.data?.job_id ?? response?.data?.id;
+
+            if (response.status === 201 || response.status === 200) {
                 toast('Sended Request!', {
                     icon: '👍',
                 });
-                // ✨ ADDED: Clear localStorage on successful submission
-                navigate(`/finding/${response.data.request_id}`);
+                localStorage.removeItem(FORM_STORAGE_KEY);
+                if (requestId) {
+                    navigate(`/finding/${requestId}`);
+                } else {
+                    toast.error("Request created, but missing request id from server.");
+                }
             } else {
                 toast.error("Failed to submit request. Please try again.");
             }
         } catch (error) {
-            toast.error("An error occurred. Please try again.");
+            console.error("CreateServiceRequest failed:", error?.response?.data || error);
+            toast.error(error?.response?.data?.message || "An error occurred. Please try again.");
         }
     };
 
@@ -246,7 +282,11 @@ export default function PunctureRequestFormRedesigned() {
             return false;
         }
         if (step === 2) return formData.location.trim() !== '' && formData.location !== "Fetching address...";
-        if (step === 3) return !!formData.problem;
+        if (step === 3) {
+            if (!formData.problem) return false;
+            if (isScheduleService) return !!formData.scheduledDate && !!formData.scheduledTime;
+            return true;
+        }
         return false;
     };
 
@@ -282,6 +322,7 @@ export default function PunctureRequestFormRedesigned() {
                             <Step3_Service
                                 formData={formData}
                                 setFormData={setFormData}
+                                isScheduleService={isScheduleService}
                             />
                         )}
                     </AnimatePresence>
@@ -522,7 +563,7 @@ const Step2_Location = ({ formData, handleLocationChange }) => (
     </StepWrapper>
 );
 
-const Step3_Service = ({ formData, setFormData }) => (
+const Step3_Service = ({ formData, setFormData, isScheduleService }) => (
     <StepWrapper title="What Service Do You Need?">
         <div className="grid grid-cols-2 gap-4">
             {(() => {
@@ -551,6 +592,29 @@ const Step3_Service = ({ formData, setFormData }) => (
             rows="3"
             className="w-full mt-6 p-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition resize-none"
         />
+
+        {isScheduleService && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Date</label>
+                    <input
+                        type="date"
+                        value={formData.scheduledDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                        className="w-full p-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Time</label>
+                    <input
+                        type="time"
+                        value={formData.scheduledTime}
+                        onChange={(e) => setFormData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                        className="w-full p-3 bg-gray-200 text-gray-700 rounded-xl shadow-[inset_2px_2px_5px_#BABECC,inset_-5px_-5px_10px_#FFFFFF] outline-none focus:shadow-[inset_1px_1px_2px_#BABECC,inset_-1px_-1px_2px_#FFFFFF] transition"
+                    />
+                </div>
+            </div>
+        )}
     </StepWrapper>
 );
 
