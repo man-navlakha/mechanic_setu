@@ -26,7 +26,7 @@ const MechanicDetail = () => {
     useEffect(() => {
         const fetchMechanic = async () => {
             try {
-                const response = await fetch(`https://mechanic-setu-backend.vercel.app/api/ms-mechanics/${id}`);
+                const response = await fetch(`http://localhost:3000/api/ms-mechanics/${id}`);
                 const data = await response.json();
                 if (data.success) {
                     setMechanic(data.mechanic);

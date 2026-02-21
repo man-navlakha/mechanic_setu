@@ -133,7 +133,7 @@ const MainPage = () => {
 
       try {
         const response = await fetch(
-          `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/nearby?latitude=${userPosition.lat}&longitude=${userPosition.lng}&radius=${NEARBY_MECHANIC_RADIUS_KM}`
+          `http://localhost:3000/api/ms-mechanics/nearby?latitude=${userPosition.lat}&longitude=${userPosition.lng}&radius=${NEARBY_MECHANIC_RADIUS_KM}`
         );
         const data = await response.json();
         if (data?.success) {
@@ -451,6 +451,7 @@ const MainPage = () => {
             center: [pos.lng, pos.lat],
             speed: 1.5,
             curve: 1,
+            zoom: 17 // ~500m scale to clearly show current location
           });
           if (userMarkerRef.current) {
             userMarkerRef.current.setLngLat([pos.lng, pos.lat]);

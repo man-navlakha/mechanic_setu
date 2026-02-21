@@ -21,7 +21,7 @@ const MechanicList = () => {
             if (filters.verified) queryParams.append('verified', filters.verified);
             if (filters.status) queryParams.append('status', filters.status);
 
-            const response = await fetch(`https://mechanic-setu-backend.vercel.app/api/ms-mechanics?${queryParams.toString()}`);
+            const response = await fetch(`http://localhost:3000/api/ms-mechanics?${queryParams.toString()}`);
             const data = await response.json();
 
             if (data.success) {

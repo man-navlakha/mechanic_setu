@@ -254,7 +254,17 @@ export default function PunctureRequestFormRedesigned() {
             }
 
             const response = await api.post("/jobs/CreateServiceRequest/", payload);
-            const requestId = response?.data?.request_id ?? response?.data?.job_id ?? response?.data?.id;
+
+            // API sometimes nests the created id under data; check all known shapes
+            const responseData = response?.data || {};
+            const nestedData = responseData.data || {};
+            const requestId =
+                responseData.request_id ??
+                responseData.job_id ??
+                responseData.id ??
+                nestedData.request_id ??
+                nestedData.job_id ??
+                nestedData.id;
 
             if (response.status === 201 || response.status === 200) {
                 toast('Sended Request!', {

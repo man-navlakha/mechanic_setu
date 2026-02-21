@@ -5,8 +5,8 @@ import api from '../utils/api';
 import { 
     User, Mail, Phone, Edit2, Save, X, LogOut, 
     Car, Bike, Truck, Bus, Calendar, MapPin, 
-    AlertCircle, CheckCircle, Clock, ChevronRight,
-    Shield, CreditCard, FileText, Loader2
+    AlertCircle, AlertTriangle, CheckCircle, Clock, ChevronRight,
+    Shield, CreditCard, FileText, Loader2, XCircle, Wrench
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-hot-toast';
@@ -25,103 +25,111 @@ const EditableField = React.memo(({ label, name, value, onChange, type = "text" 
     </div>
 ));
 
-const OrderHistoryCard = React.memo(({ order, onBookAgain }) => {
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "COMPLETED":
-                return "bg-green-100 text-green-700 border-green-200";
-            case "CANCELLED":
-                return "bg-red-100 text-red-700 border-red-200";
-            case "EXPIRED":
-                return "bg-gray-100 text-gray-700 border-gray-200";
-            default:
-                return "bg-yellow-100 text-yellow-700 border-yellow-200";
-        }
+const OrderHistoryCard = React.memo(({ order }) => {
+    const statusStyles = {
+        PENDING: "bg-amber-100 text-amber-700 border-amber-200",
+        COMPLETED: "bg-green-100 text-green-700 border-green-200",
+        CANCELLED: "bg-red-100 text-red-700 border-red-200",
+        EXPIRED: "bg-gray-100 text-gray-700 border-gray-200",
     };
 
-    const getVehicleIcon = (type) => {
-        switch (type) {
+    const vehicleTypeIcon = (type) => {
+        switch ((type || "").toLowerCase()) {
             case "bike":
-                return <Bike className="w-5 h-5 text-blue-600" />;
-            case "car":
-                return <Car className="w-5 h-5 text-blue-600" />;
+                return <Bike className="w-5 h-5 text-gray-500" />;
             case "truck":
-                return <Truck className="w-5 h-5 text-blue-600" />;
+                return <Truck className="w-5 h-5 text-gray-500" />;
             case "bus":
-                return <Bus className="w-5 h-5 text-blue-600" />;
+                return <Bus className="w-5 h-5 text-gray-500" />;
             default:
-                return <Car className="w-5 h-5 text-blue-600" />;
+                return <Car className="w-5 h-5 text-gray-500" />;
         }
     };
 
-    const formattedDate = new Date(order.created_at).toLocaleString("en-IN", {
+    const createdDate = new Date(order.created_at || order.updated_at || Date.now());
+    const dateLabel = createdDate.toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
+    });
+    const timeLabel = createdDate.toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
     });
 
+    const status = (order.status || "PENDING").toUpperCase();
+    const vehicleId = order.vehicle_id || order.license_plate || order.vehicle_rc_id || "—";
+    const serviceType = (order.service_type || "General Service").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
     return (
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 group">
-            {/* Top Section */}
-            <div className="flex justify-between items-start mb-4">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
-                        {getVehicleIcon(order.vehical_type)}
+        <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm hover:shadow-lg transition-all duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-red-600 font-bold text-lg">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span>{order.problem || "Service Request"}</span>
+                </div>
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${statusStyles[status] || statusStyles.PENDING}`}>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{status.charAt(0) + status.slice(1).toLowerCase()}</span>
+                </div>
+            </div>
+
+            {/* Vehicle + Service */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-3 border-t border-gray-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+                        {vehicleTypeIcon(order.vehicle_type || order.vehical_type)}
                     </div>
                     <div>
-                        <h4 className="font-bold text-gray-900 text-lg">{order.problem}</h4>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
-                            <Calendar size={14} />
-                            <span>{formattedDate}</span>
-                        </div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Vehicle</p>
+                        <p className="text-base font-bold text-gray-900">{vehicleId}</p>
                     </div>
                 </div>
-                {order.price && (
-                    <span className="font-bold text-lg text-gray-900">₹{order.price}</span>
-                )}
+                <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+                        <Wrench className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Service Type</p>
+                        <p className="text-base font-bold text-gray-900">{serviceType}</p>
+                    </div>
+                </div>
             </div>
 
-            {/* Middle Section - Location / Info */}
-            <div className="space-y-3 mb-4">
-                <div className="flex items-start gap-3">
-                    <MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-600 leading-snug">{order.location}</p>
+            {/* Location */}
+            <div className="py-3 border-t border-gray-100 flex items-start gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-red-500" />
                 </div>
-                
-                {order.additional_details && (
-                    <div className="flex items-start gap-3">
-                        <FileText size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-gray-600 italic">"{order.additional_details}"</p>
+                <div className="flex-1">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Location</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">{order.location || "—"}</p>
+                </div>
+                <div className="hidden sm:block w-24 h-16 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">
+                        Map preview
                     </div>
-                )}
-
-                {order.cancellation_reason && (
-                    <div className="flex items-start gap-3 p-2 bg-red-50 rounded-lg border border-red-100">
-                        <AlertCircle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                            <p className="text-xs font-bold text-red-700 uppercase">Cancelled</p>
-                            <p className="text-sm text-red-600">{order.cancellation_reason}</p>
-                        </div>
-                    </div>
-                )}
+                </div>
             </div>
 
-            {/* Bottom Section - Status + Button */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
-                    {order.status === "COMPLETED" && (
-                        <CheckCircle className="w-3 h-3" />
-                    )}
-                    {order.status === "CANCELLED" && (
-                        <XCircle className="w-3 h-3" />
-                    )}
-                    {order.status === "EXPIRED" && (
-                        <Clock className="w-3 h-3" />
-                    )}
-                    {order.status}
-                </div>
+            {/* Created On */}
+            <div className="py-3 border-t border-gray-100 flex items-center gap-3 text-sm text-gray-700">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-500 font-semibold">Created On</span>
+                <span className="font-bold text-gray-900">{dateLabel}</span>
+                <span className="text-gray-300">|</span>
+                <span className="font-semibold text-gray-800">{timeLabel}</span>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2">
+                    View Details <ChevronRight size={16} />
+                </button>
+                <button className="w-full py-3 bg-white text-gray-800 border border-gray-200 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all">
+                    Cancel Request
+                </button>
             </div>
         </div>
     );
@@ -222,15 +230,25 @@ const ProfilePage = () => {
                 const userResponse = await api.get('/Profile/UserProfile/');
                 setUser(userResponse.data);
                 setEditedUser(userResponse.data);
+                return userResponse.data;
             } catch (error) {
                 console.error("Failed to fetch user data", error);
+                return null;
             }
         };
 
-        const fetchOrderHistory = async () => {
+        const fetchOrderHistory = async (vehicleId) => {
             try {
-                const historyResponse = await api.get('/Profile/UserHistory/');
-                setOrderHistory(historyResponse.data);
+                const historyResponse = await api.get('/Profile/UserHistory/', {
+                    params: {
+                        limit: 50,
+                        offset: 0,
+                        status: 'PENDING',
+                        ...(vehicleId ? { vehicle_id: vehicleId } : {})
+                    }
+                });
+                const data = historyResponse.data;
+                setOrderHistory(data?.data || data || []);
             } catch (error) {
                 console.error("Failed to fetch order history", error);
             }
@@ -238,21 +256,26 @@ const ProfilePage = () => {
 
         const fetchMyVehicles = async () => {
             try {
-                // Use the configured api instance instead of raw axios
                 const response = await api.get('/vehicle/my-vehicles');
                 if (response.data && (response.data.success || Array.isArray(response.data.data))) {
-                    setMyVehicles(response.data.data || response.data || []);
+                    const vehicles = response.data.data || response.data || [];
+                    setMyVehicles(vehicles);
+                    return vehicles;
                 }
+                return [];
             } catch (error) {
                 console.error("Failed to fetch user vehicles", error);
+                return [];
             }
         };
 
         const fetchData = async () => {
             setLoading(true);
-            await Promise.all([fetchUserData(), fetchOrderHistory(), fetchMyVehicles()]);
+            const [_, vehicles] = await Promise.all([fetchUserData(), fetchMyVehicles()]);
+            const firstVehicleId = vehicles?.[0]?.license_plate || vehicles?.[0]?.vehicle_id;
+            await fetchOrderHistory(firstVehicleId);
             setLoading(false);
-        }
+        };
 
         fetchData();
     }, []);

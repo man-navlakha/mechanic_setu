@@ -535,7 +535,7 @@ const MechanicRegistration = () => {
             setIsEditMode(true);
             const fetchMechanic = async () => {
                 try {
-                    const response = await fetch(`https://mechanic-setu-backend.vercel.app/api/ms-mechanics/${id}`);
+                    const response = await fetch(`http://localhost:3000/api/ms-mechanics/${id}`);
                     const data = await response.json();
                     if (data.success && data.mechanic) {
                         // Merge fetched data with default state to ensure all fields exist
@@ -598,8 +598,8 @@ const MechanicRegistration = () => {
             if (payload.current_longitude) payload.current_longitude = parseFloat(payload.current_longitude);
 
             const url = isEditMode
-                ? `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/${id}`
-                : 'https://mechanic-setu-backend.vercel.app/api/ms-mechanics';
+                ? `http://localhost:3000/api/ms-mechanics/${id}`
+                : 'http://localhost:3000/api/ms-mechanics';
 
             const method = isEditMode ? 'PATCH' : 'POST';
 

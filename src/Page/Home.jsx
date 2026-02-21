@@ -163,7 +163,7 @@ function NearbyMechanics() {
 
       try {
         const response = await fetch(
-          `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/nearby?latitude=${latitude}&longitude=${longitude}&radius=39`
+          `http://localhost:3000/api/ms-mechanics/nearby?latitude=${latitude}&longitude=${longitude}&radius=39`
         );
         const data = await response.json();
         
