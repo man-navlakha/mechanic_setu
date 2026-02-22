@@ -85,7 +85,7 @@ export default function NearbyMechanics() {
 
         try {
             const response = await fetch(
-                `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/nearby?latitude=${userLocation.lat}&longitude=${userLocation.lng}&radius=${searchRadius}`
+                `/api/ms-mechanics/nearby?latitude=${userLocation.lat}&longitude=${userLocation.lng}&radius=${searchRadius}`
             );
 
             if (!response.ok) throw new Error('Failed to fetch nearby mechanics');

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiVercel = axios.create({
-    baseURL: "https://mechanic-setu-backend.vercel.app/api",
+    baseURL: "/api",
     withCredentials: true,
 });
 
