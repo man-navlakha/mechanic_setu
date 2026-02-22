@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import api from '../utils/api';
 import { toast } from 'react-hot-toast';
 
 const WebSocketContext = createContext(null);
@@ -23,11 +22,19 @@ export const WebSocketProvider = ({ children }) => {
       console.log('%c[WS-PROVIDER] Attempting to connect...', 'color: #8A2BE2;');
 
       try {
-        const res = await api.get("https://mechanic-setu.onrender.com/api/core/ws-token/", { withCredentials: true });
-        const wsToken = res.data.ws_token;
-        if (!wsToken) throw new Error("Failed to get WebSocket token");
+        const wsBase =
+          import.meta.env.VITE_WS_BASE || 'wss://mechanic-setu-int0.onrender.com';
 
-        const wsUrl = `wss://mechanic-setu.onrender.com/ws/job_notifications/?token=${wsToken}`;
+        const tokenResponse = await fetch('/core/token/', {
+          credentials: 'include',
+        });
+        if (!tokenResponse.ok) throw new Error('Failed to fetch access token');
+
+        const tokenData = await tokenResponse.json();
+        const accessToken = tokenData.access || tokenData.access_token;
+        if (!accessToken) throw new Error('Access token missing in response');
+
+        const wsUrl = `${wsBase}/ws/job_notifications/?token=${encodeURIComponent(accessToken)}`;
         console.log(`%c[WS-PROVIDER] Connecting to: ${wsUrl}`, 'color: #0000FF;');
         ws.current = new WebSocket(wsUrl);
 

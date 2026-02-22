@@ -27,6 +27,8 @@
     "react-phone-number-input": "^3.4.12",
     "react-router-dom": "^7.9.0",
     "react-spring": "^10.0.1",
+    "simple-peer": "^9.11.1",
+    "socket.io-client": "^4.8.3",
     "tailwindcss": "^4.1.13"
   },
   "devDependencies": {

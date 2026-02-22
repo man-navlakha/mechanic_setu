@@ -45,6 +45,16 @@ We are currently live and serving users in the following areas of **Ahmedabad**:
 
 ---
 
+## 🔌 Local Development (API routing)
+In development, this project uses Vite’s proxy to route requests to different backends:
+- **Auth only** (`/api/core/*`, `/api/users/*`) → `http://localhost:3000`
+- **Everything else** (`/api/*`) → `https://mechanic-setu-backend.vercel.app`
+- **WebSocket** (`/ws/*`) → `wss://mechanic-setu-int0.onrender.com`
+
+WebSocket hosts can be overridden with:
+- `VITE_WS_HTTP_BASE` (default `https://mechanic-setu-int0.onrender.com`)
+- `VITE_WS_BASE` (default `wss://mechanic-setu-int0.onrender.com`)
+
 ## 👥 Authors
 This project was brought to life by:
 * **Man Navlakha** (Founder) - [GitHub](https://github.com/man-navlakha) | [Portfolio](https://man-navlakha.netlify.app/)

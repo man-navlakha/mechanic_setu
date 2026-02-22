@@ -48,25 +48,25 @@ function Hero() {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col justify-center items-center bg-gradient-to-b from-blue-50 to-white px-4 overflow-hidden">
+    <section className="relative min-h-[80vh] sm:min-h-[90vh] flex flex-col justify-center items-center bg-gradient-to-b from-blue-50 to-white px-4 sm:px-6 overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-72 h-72 sm:w-96 sm:h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-[-20%] left-[20%] w-72 h-72 sm:w-96 sm:h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       <div className="relative z-10 max-w-4xl w-full text-center">
         <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
           🚀 #1 Roadside Assistance in Gujarat
         </div>
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 text-slate-900 tracking-tight">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 text-slate-900 tracking-tight leading-tight">
           Stuck on the road? <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">
             Get Help Instantly.
           </span>
         </h1>
-        <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+        <p className="text-base sm:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
           Find verified mechanics nearby for puncture repair, battery jumpstart, and emergency breakdown services.
         </p>
 
@@ -80,7 +80,7 @@ function Hero() {
           <button
             onClick={handleDetectLocation}
             disabled={loading}
-            className="flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 text-base sm:text-lg font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <Loader className="w-5 h-5 mr-2 animate-spin" />
@@ -92,7 +92,7 @@ function Hero() {
           
           <button
             onClick={() => navigate('/login')}
-            className="flex items-center justify-center px-8 py-4 text-lg font-bold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 text-base sm:text-lg font-bold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
           >
             <Search className="w-5 h-5 mr-2" />
             Search by Issue
@@ -101,7 +101,7 @@ function Hero() {
 
         <div className="flex flex-wrap justify-center gap-3">
           {issues.map((issue) => (
-            <span key={issue} className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-sm text-slate-600 shadow-sm">
+            <span key={issue} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-xs sm:text-sm text-slate-600 shadow-sm">
               {issue}
             </span>
           ))}
@@ -161,11 +161,11 @@ function NearbyMechanics() {
       const { latitude, longitude } = position.coords;
       setUserLoc({ latitude, longitude });
 
-      try {
-        const response = await fetch(
-          `https://mechanic-setu-backend.vercel.app/api/ms-mechanics/nearby?latitude=${latitude}&longitude=${longitude}&radius=39`
-        );
-        const data = await response.json();
+        try {
+          const response = await fetch(
+            `/api/ms-mechanics/nearby?latitude=${latitude}&longitude=${longitude}&radius=39`
+          );
+          const data = await response.json();
         
         if (data.success && data.mechanics) {
           // Sort: Online first, then by distance
@@ -192,7 +192,7 @@ function NearbyMechanics() {
   return (
     <section className="py-16 px-4 bg-slate-50">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-end mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Mechanics Near You</h2>
             <p className="text-slate-500 mt-1">Real-time availability based on your location</p>
@@ -200,58 +200,89 @@ function NearbyMechanics() {
           <button className="text-blue-600 font-semibold hover:underline hidden sm:block">View All</button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {mechanics.map((mechanic) => (
-            <div key={mechanic.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 hover:shadow-md transition-all flex gap-4">
-              {/* Image Section */}
-              <div className="relative w-24 h-24 flex-shrink-0">
-                <img 
-                  src={mechanic.shop_photo || "https://images.unsplash.com/photo-1486262715619-72a47fe9d931?auto=format&fit=crop&q=80&w=200"} 
-                  alt={mechanic.shop_name}
-                  className="w-full h-full object-cover rounded-xl bg-slate-100"
-                />
-                <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${mechanic.status === 'ONLINE' ? 'bg-green-500' : 'bg-slate-400'}`}></div>
-              </div>
-
-              {/* Content Section */}
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-lg text-slate-900 truncate pr-2">
-                      {mechanic.shop_name}
-                    </h3>
-                    {mechanic.is_verified && (
-                      <span className="inline-flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1">
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <span className="block font-bold text-slate-900">{mechanic.distance_text}</span>
-                    <span className="text-xs text-slate-500">away</span>
-                  </div>
+            <div
+              key={mechanic.id}
+              className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+            >
+              <div className="flex items-start gap-4">
+                {/* Image */}
+                <div className="relative w-14 h-14 md:w-16 md:h-16 flex-shrink-0">
+                  <img
+                    src={
+                      mechanic.shop_photo ||
+                      "https://images.unsplash.com/photo-1486262715619-72a47fe9d931?auto=format&fit=crop&q=80&w=200"
+                    }
+                    alt={mechanic.shop_name}
+                    className="w-full h-full object-cover rounded-xl bg-slate-100"
+                    loading="lazy"
+                  />
+                  <div
+                    className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                      mechanic.status === 'ONLINE' ? 'bg-green-500' : 'bg-slate-400'
+                    }`}
+                    aria-label={mechanic.status === 'ONLINE' ? 'Online' : 'Offline'}
+                    title={mechanic.status === 'ONLINE' ? 'Online' : 'Offline'}
+                  />
                 </div>
 
-                <p className="text-sm text-slate-500 mt-2 truncate">
-                  {mechanic.shop_address}
-                </p>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-slate-900 truncate">
+                        {mechanic.shop_name}
+                      </h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        {mechanic.is_verified && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                            <CheckCircle2 className="w-3 h-3" /> Verified
+                          </span>
+                        )}
+                        {mechanic.vehicle_type && (
+                          <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {mechanic.vehicle_type}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Skills Tags */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {mechanic.special_skills ? (
-                    mechanic.special_skills.split(',').slice(0, 2).map((skill, i) => (
-                      <span key={i} className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-md">
-                        {skill.trim()}
+                    <div className="flex-shrink-0 text-right">
+                      <span className="inline-flex items-center text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded-full">
+                        {mechanic.distance_text}
                       </span>
-                    ))
-                  ) : (
-                    <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-md">General Repair</span>
-                  )}
-                  {mechanic.vehicle_type && (
-                     <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-md">
-                       {mechanic.vehicle_type}
-                     </span>
-                  )}
+                    </div>
+                  </div>
+
+                  <p
+                    className="mt-2 text-sm text-slate-600 overflow-hidden"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+                  >
+                    {mechanic.shop_address}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {mechanic.special_skills
+                      ? mechanic.special_skills
+                          .split(',')
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .map((skill) => (
+                            <span
+                              key={skill}
+                              className="text-xs text-slate-600 bg-white px-2 py-1 rounded-lg border border-slate-200"
+                            >
+                              {skill}
+                            </span>
+                          ))
+                      : (
+                        <span className="text-xs text-slate-600 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                          General Repair
+                        </span>
+                      )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -278,9 +309,9 @@ function LocalServiceAreas() {
       <div className="max-w-6xl mx-auto px-4 text-center">
         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">Urgent Repair Available In</h3>
         <div className="flex flex-wrap justify-center gap-3">
-          {locations.map(loc => (
+          {locations.map((loc, idx) => (
             <span key={loc} className="text-sm text-slate-600 hover:text-blue-600 cursor-pointer transition-colors">
-              {loc} •
+              {loc}{idx < locations.length - 1 ? ' •' : ''}
             </span>
           ))}
         </div>
@@ -344,7 +375,7 @@ export default function Home() {
   }, [navigate]);
 
   return (
-    <main className="bg-white min-h-screen">
+    <main className="bg-white min-h-screen pt-16 sm:pt-20">
       <NavbarLanding />
       <Hero />
       <EmergencyActions />
