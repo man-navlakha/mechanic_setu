@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { toast } from 'react-hot-toast';
 
 const WebSocketContext = createContext(null);
-
 export const useWebSocket = () => useContext(WebSocketContext);
 
 export const WebSocketProvider = ({ children }) => {
@@ -13,67 +12,62 @@ export const WebSocketProvider = ({ children }) => {
 
   useEffect(() => {
     const connect = async () => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        console.log('%c[WS-PROVIDER] WebSocket already connected.', 'color: #008000;');
-        return;
-      }
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) return;
 
       setConnectionStatus('connecting');
-      console.log('%c[WS-PROVIDER] Attempting to connect...', 'color: #8A2BE2;');
 
       try {
-        const wsHttpBase =
-          import.meta.env.VITE_WS_HTTP_BASE || 'https://mechanic-setu-int0.onrender.com';
-        const wsBase =
-          import.meta.env.VITE_WS_BASE || 'wss://mechanic-setu-int0.onrender.com';
+        // 1. Fetch the token from your Node.js backend
+        // (Make sure this URL matches exactly what you named the route in authRoutes.js for getAccessToken)
+      // Grab the Node.js URL from env, or fallback to local Node server
+const NODE_API_URL = import.meta.env.VITE_NODE_API_URL || 'https://mechanic-setu-backend.vercel.app';
 
-        const tokenResponse = await fetch(`${wsHttpBase}/api/core/token/`, {
-          credentials: 'include',
-        });
-        if (!tokenResponse.ok) throw new Error('Failed to fetch access token');
+const tokenResponse = await fetch(`${NODE_API_URL}/api/get-token`, { 
+    method: 'GET',
+    credentials: 'include' 
+});
 
-        const tokenData = await tokenResponse.json();
-        const accessToken =
-          tokenData.access ||
-          tokenData.access_token ||
-          tokenData.token ||
-          tokenData.ws_token;
-        if (!accessToken) throw new Error('Access token missing in response');
+        if (!tokenResponse.ok) {
+            console.warn('User is not logged in or token expired.');
+            setConnectionStatus('disconnected');
+            return;
+        }
 
+        const data = await tokenResponse.json();
+        const accessToken = data.access;
+
+        if (!accessToken) {
+            throw new Error("Token missing from Node.js response.");
+        }
+
+        // 2. Connect to Django using the retrieved token
+        const wsBase = import.meta.env.VITE_WS_BASE || 'wss://mechanic-setu-int0.onrender.com';
         const wsUrl = `${wsBase}/ws/job_notifications/?token=${encodeURIComponent(accessToken)}`;
-        console.log(`%c[WS-PROVIDER] Connecting to: ${wsUrl}`, 'color: #0000FF;');
+        
         ws.current = new WebSocket(wsUrl);
 
         ws.current.onopen = () => {
-          console.log('%c[WS-PROVIDER] ==> Connection successful!', 'color: #008000; font-weight: bold;');
+          console.log('WebSocket Connection successful!');
           setConnectionStatus('connected');
           setSocket(ws.current);
-
-          
         };
 
         ws.current.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          console.log('%c[WS-PROVIDER] ==> Message Received:', 'color: #d3d3d3ff; font-weight: bold;', data);
-          setLastMessage(data);
+          const messageData = JSON.parse(event.data);
+          setLastMessage(messageData);
         };
 
         ws.current.onclose = (event) => {
-          console.warn(`[WS-PROVIDER] ==> Disconnected. Code: ${event.code}, Reason: ${event.reason}`);
-          if (event.code !== 1000) {
-            toast.error('Real-time connection lost.');
-          }
+          if (event.code !== 1000) toast.error('Real-time connection lost.');
           setConnectionStatus('disconnected');
         };
 
-        ws.current.onerror = (error) => {
-          console.error('[WS-PROVIDER] ==> An error occurred:', error);
-          toast.error('A real-time connection error occurred.');
+        ws.current.onerror = () => {
           setConnectionStatus('error');
         };
 
       } catch (error) {
-        console.error('[WS-PROVIDER] ==> Connection setup failed:', error);
+        console.error('Connection setup failed:', error);
         setConnectionStatus('error');
       }
     };
@@ -82,23 +76,14 @@ export const WebSocketProvider = ({ children }) => {
 
     return () => {
       if (ws.current) {
-        console.log('[WS-PROVIDER] Provider unmounting. Closing WebSocket.');
         ws.current.close(1000, "Provider unmounted");
         ws.current = null;
       }
     };
   }, []);
 
-  useEffect(() => {
-    if (lastMessage) {
-        console.log('%c[WS-PROVIDER] State updated with new message:', 'color: #FF00FF;', lastMessage);
-    }
-  }, [lastMessage]);
-
-  const value = { socket, lastMessage, connectionStatus };
-
   return (
-    <WebSocketContext.Provider value={value}>
+    <WebSocketContext.Provider value={{ socket, lastMessage, connectionStatus }}>
       {children}
     </WebSocketContext.Provider>
   );

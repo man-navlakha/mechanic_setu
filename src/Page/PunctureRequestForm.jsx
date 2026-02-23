@@ -265,13 +265,18 @@ export default function PunctureRequestFormRedesigned() {
             }
 
             const accessToken = Cookies.get('access') || localStorage.getItem('access');
-            const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
-            const response = await api.post(
-                `${JOBS_API_BASE}/api/jobs/CreateServiceRequest/`,
-                payload,
-                headers ? { headers } : undefined
-            );
 
+            const API_BASE_URL = import.meta.env.VITE_NODE_API_URL || 'https://mechanic-setu-int0.onrender.com';
+
+            const response = await fetch(`${API_BASE_URL}/api/jobs/CreateServiceRequest/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                     'Authorization': `Bearer ${accessToken}`,
+                },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
             // API sometimes nests the created id under data; check all known shapes
             const responseData = response?.data || {};
             const nestedData = responseData.data || {};
