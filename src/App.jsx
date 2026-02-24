@@ -75,7 +75,7 @@ function LandingHero({ error = '', loading, issues, onBookMechanic, onDetectLoca
       </div>
 
       <div className="relative z-10 max-w-4xl w-full text-center">
-        <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-blue-100 text-violet-600 text-sm font-medium">
+        <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-gray-100 text-violet-600 text-sm font-medium">
           <span className="flex mx-2">
             <Rocket className="w-4 mx-1 text-violet-600" />
             #1 Roadside Assistance in Gujarat
@@ -84,8 +84,14 @@ function LandingHero({ error = '', loading, issues, onBookMechanic, onDetectLoca
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 text-slate-900 tracking-tight leading-tight">
           Stuck on the road? <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">
-            Get Mechanic in Minutes.
-          </span>
+  Get Mechanic in{' '}
+  <span className="inline-block rounded-2xl border border-zinc-200 bg-white/30 px-3 py-1 rotate-[-12deg] -translate-y-2 shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+    <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 -my-12">
+      Minutes
+    </span>
+  </span>.
+</span>
+
         </h1>
         <p className="text-base sm:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
           Find verified mechanics nearby for puncture repair, battery jumpstart, and emergency breakdown services.
@@ -145,89 +151,6 @@ LandingHero.propTypes = {
   onDetectLocation: PropTypes.func.isRequired
 };
 
-function EmergencyActions() {
-  const actions = [
-    {
-      icon: <Droplet className="w-6 h-6 text-blue-600" />,
-      title: 'Puncture Repair',
-      desc: 'Tubeless & Tube',
-      note: 'Most booked emergency service',
-      layout: 'sm:col-span-2 lg:col-span-2 lg:row-span-2',
-      tone: 'from-blue-50 to-cyan-50 border-blue-100',
-      iconBg: 'bg-white'
-    },
-    {
-      icon: <Battery className="w-6 h-6 text-green-600" />,
-      title: 'Battery Jumpstart',
-      desc: 'Dead Battery Help',
-      note: 'Quick power recovery on-site',
-      layout: 'lg:col-span-2',
-      tone: 'from-emerald-50 to-lime-50 border-emerald-100',
-      iconBg: 'bg-white'
-    },
-    {
-      icon: <Wrench className="w-6 h-6 text-orange-600" />,
-      title: 'Engine Issue',
-      desc: 'Minor Fixes',
-      note: 'Rapid diagnostics and repair',
-      layout: 'lg:col-span-1',
-      tone: 'from-amber-50 to-orange-50 border-orange-100',
-      iconBg: 'bg-white'
-    },
-    {
-      icon: <Zap className="w-6 h-6 text-yellow-600" />,
-      title: 'Towing Service',
-      desc: 'Flatbed & Chain',
-      note: 'Safe tow support any time',
-      layout: 'lg:col-span-1',
-      tone: 'from-violet-50 to-fuchsia-50 border-violet-100',
-      iconBg: 'bg-white'
-    }
-  ];
-
-  return (
-    <section className="py-16 px-4 bg-white">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900">Emergency Services</h2>
-          <p className="text-slate-500 mt-2">Instant roadside support designed for urgent breakdown moments.</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[150px] gap-4">
-          {actions.map((action, index) => (
-            <article
-              key={action.title}
-              className={`h-full rounded-3xl border p-5 bg-gradient-to-br ${action.tone} ${action.layout} shadow-sm hover:shadow-md transition-all group`}
-            >
-              <div className="h-full flex flex-col justify-between">
-                <div className="flex items-start justify-between gap-3">
-                  <div
-                    className={`w-12 h-12 ${action.iconBg} rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}
-                  >
-                    {action.icon}
-                  </div>
-                  {index === 0 && (
-                    <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
-                      Priority
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className={`font-bold text-slate-900 ${index === 0 ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl'}`}>
-                    {action.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-1">{action.desc}</p>
-                  <p className="text-xs text-slate-500 mt-3">{action.note}</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function LandingNearbyMechanics() {
   const [mechanics, setMechanics] = useState([]);
@@ -515,15 +438,14 @@ function LandingPage() {
         onBookMechanic={() => navigate('/login')}
         onDetectLocation={handleDetectLocation}
       />
-      <EmergencyActions />
       <LandingNearbyMechanics />
       <LandingFAQ />
       <LocalServiceAreas />
 
-      <footer className="relative bg-black text-white border-t border-white/10 overflow-hidden">
+      <footer className="relative bg-gradient-to-r from-slate-100 via-blue-100 to-slate-200 text-white border-t border-white/10 overflow-hidden">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-8 py-8 sm:py-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-zinc-400">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-zinc-800">
               <span className="text-sm sm:text-base tracking-wide">(c) 2026 Mechanic Setu.</span>
               <a href="#" className="text-sm sm:text-base tracking-wide hover:text-zinc-200 transition-colors">
                 Policies
@@ -537,23 +459,23 @@ function LandingPage() {
               <a
                 href="#"
                 aria-label="LinkedIn"
-                className="h-12 w-12 rounded-2xl border border-white/15 flex items-center justify-center text-zinc-300 hover:text-white hover:border-white/35 transition-colors"
+                className="h-12 w-12 rounded-2xl border border-BLACK/15 flex items-center justify-center text-zinc-900 hover:text-gray-800/30 hover:border-gray-900/35 transition-colors"
               >
                 <Linkedin className="w-5 h-5" />
               </a>
               <a
                 href="#"
                 aria-label="X"
-                className="h-12 w-12 rounded-2xl border border-white/15 flex items-center justify-center text-zinc-300 hover:text-white hover:border-white/35 transition-colors text-lg font-medium"
+                className="h-12 w-12 rounded-2xl border border-black/80 flex items-center justify-center text-zinc-900 hover:text-black/30 hover:border-black/35 transition-colors text-lg font-medium"
               >
                 X
               </a>
-              <span className="h-7 w-px bg-white/15 mx-1" />
+              <span className="h-7 w-px bg-black/35 mx-1" />
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="h-12 px-6 rounded-full border border-white/15 text-zinc-200 hover:text-white hover:border-white/35 transition-colors inline-flex items-center gap-2 text-lg"
-              >
+                className="h-12 px-6 rounded-full border border-black/30 text-zinc-900 hover:text-black hover:border-black/35 transition-colors inline-flex items-center gap-2 text-lg"
+               >
                 Top <ArrowUp className="w-4 h-4" />
               </button>
             </div>
