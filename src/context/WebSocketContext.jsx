@@ -25,23 +25,7 @@ export const WebSocketProvider = ({ children }) => {
     isConnecting.current = true;
 
     try {
-      // 1. Fetch the token from your Node.js backend
-      // (Make sure this URL matches exactly what you named the route in authRoutes.js for getAccessToken)
-      // Grab the Node.js URL from env, or fallback to local Node server
       const NODE_API_URL = import.meta.env.VITE_NODE_API_URL || 'https://mechanic-setu-int0.onrender.com';
-
-      // const tokenResponse = await fetch(`${NODE_API_URL}/api/get-token`, {
-      //   method: 'GET',
-      //   credentials: 'include'
-      // });
-
-      // if (!tokenResponse.ok) {
-      //   console.warn('User is not logged in or token expired.');
-      //   updateStatus('disconnected');
-      //   return;
-      // }
-
-      // const data = await tokenResponse.json();
        const accessToken = Cookies.get('access') || localStorage.getItem('access');
 
       if (!accessToken) {
