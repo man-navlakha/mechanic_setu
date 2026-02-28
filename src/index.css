@@ -1,8 +1,59 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate";
+/* Removed tailwindcss-animate plugin (offline). Recreate needed utilities below. */
 
 @custom-variant dark (&:is(.dark *));
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: fade-in;
+  }
+
+  .zoom-in-95 {
+    animation-name: zoom-in-95;
+  }
+
+  .slide-in-from-bottom-2 {
+    animation-name: slide-in-from-bottom-2;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-from-bottom-2 {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 @keyframes floatMinutes {
   0%, 100% { transform: translateY(-6px) rotate(-12deg); }

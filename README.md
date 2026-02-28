@@ -47,7 +47,7 @@ We are currently live and serving users in the following areas of **Ahmedabad**:
 
 ## 🔌 Local Development (API routing)
 In development, this project uses Vite’s proxy to route requests to different backends:
-- **Auth only** (`/api/core/*`, `/api/users/*`) → `http://localhost:3000`
+- **Auth only** (`/api/core/*`, `/api/users/*`) → `https://mechanic-setu-backend.vercel.app`
 - **Everything else** (`/api/*`) → `https://mechanic-setu-backend.vercel.app`
 - **WebSocket** (`/ws/*`) → `wss://mechanic-setu-int0.onrender.com`
 
