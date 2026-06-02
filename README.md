@@ -58,7 +58,7 @@ WebSocket hosts can be overridden with:
 ## 👥 Authors
 This project was brought to life by:
 * **Man Navlakha** (Founder) - [GitHub](https://github.com/man-navlakha) | [Portfolio](https://man-navlakha.netlify.app/)
-* **Dhruv Panchal** (Partner) - [GitHub](https://github.com/Dhruv9512) | [Portfolio](https://dhruv-portfolio-y8kt.onrender.com)
+* **Dhruv Sharma** (Partner) - [GitHub](https://github.com/Dhruv9512) | [Portfolio](https://dhruv-portfolio-y8kt.onrender.com)
 
 ---
 
