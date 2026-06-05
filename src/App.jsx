@@ -32,10 +32,6 @@ import MechanicRegistration from './Page/MechanicRegistration';
 import MechanicList from './Page/MechanicList';
 import MechanicDetail from './Page/MechanicDetail';
 import RCInfo from './Page/RCInfo';
-import VehicleDashboard from './Page/Dashboard/VehicleDashboard';
-import VehicleDetails from './Page/Dashboard/VehicleDetails';
-import VehicleAdmin from './Page/Dashboard/VehicleAdmin';
-import VehicleAdminDetail from './Page/Dashboard/VehicleAdminDetail';
 import NotFound from './Page/NotFound';
 import Protected from './ProtectedRoute';
 import NavbarLanding from './components/NavbarLanding';
@@ -587,7 +583,7 @@ export default function App() {
         
         
 
-        <Route element={<ProtectedShell />}>
+          <Route element={<ProtectedShell />}>
           <Route path="/home" element={<MainPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/form" element={<ProcessForm />} />
@@ -597,10 +593,7 @@ export default function App() {
           <Route path="/ms/view/:id" element={<MechanicDetail />} />
           <Route path="/ms/edit/:id" element={<MechanicRegistration />} />
           <Route path="/vehicle-rc" element={<RCInfo />} />
-          <Route path="/admin/vehicles" element={<VehicleAdmin />} />
-          <Route path="/admin/vehicles/:id" element={<VehicleAdminDetail />} />
-          <Route path="/dashboard/vehicles" element={<VehicleDashboard />} />
-          <Route path="/dashboard/vehicles/:id" element={<VehicleDetails />} />
+          {/* Admin routes have been removed */}
 
           <Route element={<RequestLayout />}>
             <Route path="/finding/:request_id" element={<FindingMechanic />} />

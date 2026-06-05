@@ -125,21 +125,8 @@ export default function NavbarLanding() {
                     >
                       <User size={16} /> My Profile
                     </Link>
-                    <Link
-                      to="/dashboard/vehicles"
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <Car size={16} /> My Vehicles
-                    </Link>
-                    {/* Placeholder for history if page doesn't exist yet */}
-                    <Link
-                      to="/dashboard/vehicles" 
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <FileText size={16} /> Service History
-                    </Link>
+                    {/* My Vehicles (dashboard) removed */}
+                    {/* Service history removed or consolidated into dashboard (route removed) */}
                   </div>
 
                   <div className="border-t border-gray-100 py-1">
@@ -217,9 +204,6 @@ export default function NavbarLanding() {
               <>
                 <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>
                   <User size={20} /> My Profile
-                </Link>
-                <Link to="/dashboard/vehicles" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>
-                  <Car size={20} /> My Vehicles
                 </Link>
                 <button
                   onClick={handleLogout}

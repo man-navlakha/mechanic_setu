@@ -136,28 +136,9 @@ export default function Navbar() {
                     >
                       <User size={16} /> My Profile
                     </Link>
-                    <Link
-                      to="/dashboard/vehicles"
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <Car size={16} /> My Vehicles
-                    </Link>
-                    {/* Placeholder for history if page doesn't exist yet */}
-                    <Link
-                      to="/dashboard/vehicles" 
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <FileText size={16} /> Service History
-                    </Link>
-                    <Link
-                      to="/admin/vehicles"
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      <Shield size={16} /> Admin • Vehicles
-                    </Link>
+                    {/* My Vehicles (dashboard) removed */}
+                    {/* Service History link removed (dashboard vehicles route removed) */}
+                    {/* Admin vehicles removed */}
                   </div>
 
                   <div className="border-t border-gray-100 py-1">
@@ -236,12 +217,7 @@ export default function Navbar() {
                 <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>
                   <User size={20} /> My Profile
                 </Link>
-                <Link to="/dashboard/vehicles" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>
-                  <Car size={20} /> My Vehicles
-                </Link>
-                <Link to="/admin/vehicles" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>
-                  <Shield size={20} /> Admin • Vehicles
-                </Link>
+                {/* Dashboard and admin vehicle links removed from mobile menu */}
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg w-full text-left"

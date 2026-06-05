@@ -73,6 +73,8 @@ export default function PunctureRequestFormRedesigned() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [step, setStep] = useState(1);
+    const [services, setServices] = useState([]);
+    const [servicesLoading, setServicesLoading] = useState(false);
     const vehicleIdFromQuery = searchParams.get('vehicleId');
     const serviceFromQuery = searchParams.get('service');
     const isScheduleService = serviceFromQuery === 'schedule-service';
@@ -114,6 +116,38 @@ export default function PunctureRequestFormRedesigned() {
     useEffect(() => {
         localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
     }, [formData]); // This runs every time the formData state changes
+
+    useEffect(() => {
+        let ignore = false;
+
+        const fetchServices = async () => {
+            setServicesLoading(true);
+            try {
+                const params = formData.vehicleType ? { vehicle_type: formData.vehicleType } : undefined;
+                const response = await api.get('/services', { params });
+                const list = Array.isArray(response?.data?.services) ? response.data.services : [];
+
+                if (!ignore) {
+                    const activeServices = list.filter((item) => item?.is_active !== false);
+                    setServices(activeServices);
+                }
+            } catch (error) {
+                if (!ignore) {
+                    setServices([]);
+                }
+            } finally {
+                if (!ignore) {
+                    setServicesLoading(false);
+                }
+            }
+        };
+
+        fetchServices();
+
+        return () => {
+            ignore = true;
+        };
+    }, [formData.vehicleType]);
 
     useEffect(() => {
         const vehicleIdFromQuery = searchParams.get('vehicleId');
@@ -364,6 +398,8 @@ export default function PunctureRequestFormRedesigned() {
                                 formData={formData}
                                 setFormData={setFormData}
                                 isScheduleService={isScheduleService}
+                                services={services}
+                                servicesLoading={servicesLoading}
                             />
                         )}
                     </AnimatePresence>
@@ -604,11 +640,23 @@ const Step2_Location = ({ formData, handleLocationChange }) => (
     </StepWrapper>
 );
 
-const Step3_Service = ({ formData, setFormData, isScheduleService }) => (
+const Step3_Service = ({ formData, setFormData, isScheduleService, services, servicesLoading }) => (
     <StepWrapper title="What Service Do You Need?">
+        {servicesLoading && (
+            <div className="mb-4 p-3 bg-gray-100 rounded-xl text-sm text-gray-600 flex items-center gap-2">
+                <Loader size={16} className="animate-spin" />
+                Loading services...
+            </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
             {(() => {
-                const list = problems[formData.vehicleType] || [];
+                const mappedServices = (services || []).map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    icon: item.icon || '🛠️',
+                }));
+                const list = mappedServices.length > 0 ? mappedServices : (problems[formData.vehicleType] || []);
                 const selected = formData.problem;
                 const selectedInList = !!selected && list.some((p) => p.name === selected);
                 const finalList = !selectedInList && selected
